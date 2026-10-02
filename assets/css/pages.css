@@ -76,3 +76,21 @@ body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready
   .nav nav.mobileOpen a:last-child{margin-top:4px;text-align:center}
   .menu{position:relative;z-index:60}
 }
+
+/* REALISTIC HERO / DETAILING VISUALS */
+.realCarStage{height:500px;display:grid;place-items:center;position:relative}
+.realCarFrame{position:relative;width:min(570px,96%);height:370px;border-radius:28px;overflow:hidden;transform:perspective(1200px) rotateY(-7deg) rotateX(2deg);box-shadow:0 35px 80px rgba(0,0,0,.55),0 0 50px rgba(22,163,74,.12);border:1px solid rgba(255,255,255,.14);animation:realPhotoFloat 6s ease-in-out infinite;transform-style:preserve-3d}
+.realCarImage{width:100%;height:100%;display:block;object-fit:cover;object-position:center;filter:saturate(.92) contrast(1.08) brightness(.78);transform:scale(1.03)}
+.photoShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(1,8,12,.55),transparent 48%,rgba(1,8,12,.15)),linear-gradient(0deg,rgba(0,0,0,.42),transparent 45%);pointer-events:none}
+.photoGlow{position:absolute;inset:auto 8% 8% 8%;height:55px;background:radial-gradient(ellipse,rgba(35,205,105,.34),transparent 70%);filter:blur(16px);pointer-events:none}
+.realBadge{position:absolute;right:18px;bottom:18px;padding:10px 14px;border:1px solid rgba(255,255,255,.2);border-radius:30px;background:rgba(5,17,23,.68);backdrop-filter:blur(12px);color:#d7f8df;font-size:9px;letter-spacing:1.7px;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.realDrop{position:absolute;width:10px;height:17px;border-radius:70% 35% 65% 35%;background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(83,211,232,.28));box-shadow:0 0 12px rgba(180,250,255,.7),inset -2px -2px 3px rgba(0,0,0,.15);filter:blur(.15px);animation:realDropMove 3.8s ease-in-out infinite}
+.rd1{left:24%;top:21%}.rd2{left:72%;top:35%;animation-delay:1s}.rd3{left:63%;top:70%;animation-delay:1.8s}.rd4{left:36%;top:62%;animation-delay:.6s}
+.realWashPanel{background:#03080b}
+.realWashPanel img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;filter:saturate(.95) contrast(1.08) brightness(.78);transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.realWashPanel:hover img{transform:scale(1.045)}
+.washShade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.48));pointer-events:none}
+@keyframes realPhotoFloat{0%,100%{transform:perspective(1200px) rotateY(-7deg) rotateX(2deg) translateY(0)}50%{transform:perspective(1200px) rotateY(-5deg) rotateX(1deg) translateY(-7px)}}
+@keyframes realDropMove{0%,100%{transform:translate3d(0,0,0) rotate(0);opacity:.55}50%{transform:translate3d(3px,-12px,0) rotate(6deg);opacity:1}}
+@media(max-width:900px){.realCarStage{height:390px}.realCarFrame{height:300px;width:95%;transform:none}.realCarFrame{animation:none}}
+@media(max-width:650px){.realCarStage{height:330px}.realCarFrame{height:245px;border-radius:20px}.realBadge{font-size:7px;padding:8px 10px;right:10px;bottom:10px}.realDrop{width:8px;height:14px}}
