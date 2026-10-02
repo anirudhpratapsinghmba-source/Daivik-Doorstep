@@ -28,6 +28,10 @@
     const date = $("bdate").value;
     const time = $("btime").value;
     const address = $("baddress").value.trim();
+    const lat = Number($("bLat").value);
+    const lng = Number($("bLng").value);
+    const distanceKm = Number($("bDistance").value || 0);
+    const locationCharge = Number($("bLocationCharge").value || 0);
     const addon = Number($("baddon").value || 0);
 
     if (!name || !phone || !vehicle || !wash || !date || !time || !address) {
@@ -38,14 +42,18 @@
       alert("Please enter a valid 10-digit mobile number.");
       return;
     }
+    if (!Number.isFinite(lat)||!Number.isFinite(lng)) {
+      alert("Please select your service location using the map or Use My Location.");
+      return;
+    }
 
     try {
       const currentUser = await getUser();
-      const total = P[vehicle][wash] + addon;
+      const total = P[vehicle][wash] + addon + locationCharge;
       const id = newBookingId();
 
       const booking = {
-        id, name, phone, vehicle, model, wash, date, time, address, addon, total,
+        id, name, phone, vehicle, model, wash, date, time, address, lat, lng, distanceKm, locationCharge, addon, total,
         status: "Pending Confirmation",
         createdBy: currentUser.uid,
         scheduledAt: new Date(date + "T09:00:00").getTime(),
@@ -69,7 +77,7 @@
       $("sumPrice").textContent = "₹" + total.toLocaleString("en-IN");
       $("sumName").textContent = name;
       $("sumSlot").textContent = date + " • " + time;
-      $("sumAddress").textContent = address;
+      $("sumAddress").textContent = address + " • " + distanceKm.toFixed(1) + " km from base";
       $("firebaseStatus").textContent = "Pending Confirmation";
       $("bookingSummary").classList.add("show");
 

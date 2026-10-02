@@ -45,7 +45,7 @@ if (window.firebase && cfg.apiKey && !String(cfg.apiKey).startsWith("PASTE_")) {
           "<td>"+esc(b.vehicle)+"<br>"+esc(b.model)+"</td>" +
           "<td>"+esc(b.wash)+"<br>₹"+Number(b.total || 0).toLocaleString("en-IN")+"</td>" +
           "<td>"+esc(b.date)+"<br>"+esc(b.time)+"</td>" +
-          "<td>"+esc(b.address)+"</td>" +
+          "<td>"+esc(b.address)+"<br><b>"+Number(b.distanceKm||0).toFixed(1)+" km</b> • ₹"+Number(b.locationCharge||0).toLocaleString("en-IN")+" location charge<br>"+(b.lat&&b.lng?"<a href='https://www.google.com/maps?q="+encodeURIComponent(b.lat+","+b.lng)+"' target='_blank' rel='noopener'>📍 Open Customer Location</a>":"")+"</td>" +
           "<td><select data-id='"+esc(b.id)+"' class='status'><option>Pending Confirmation</option><option>Accepted</option><option>Cancelled</option><option>Completed</option></select><input data-id='"+esc(b.id)+"' class='acceptedDate' type='date' value='"+esc(b.acceptedDate)+"'><input data-id='"+esc(b.id)+"' class='acceptedTime' placeholder='Accepted time' value='"+esc(b.acceptedTime)+"'><button data-id='"+esc(b.id)+"' class='save'>Save</button></td>" +
           "</tr>";
       }).join("");
