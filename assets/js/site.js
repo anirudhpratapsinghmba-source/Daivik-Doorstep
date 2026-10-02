@@ -1,69 +1,170 @@
 const WHATSAPP_NUMBER="917983558954";
-function siteNav(){const m=document.getElementById("nav");if(!m)return;const open=m.classList.toggle("mobileOpen");m.style.display=open?"flex":""}
-function openWhatsApp(){window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent("Hello Daivik Doorstep Car Care 👋\nI want to book a car wash. Please share available slots."),"_blank")}
-document.addEventListener("DOMContentLoaded",()=>{const d=new Date();const x=document.getElementById("bdate");if(x){d.setMinutes(d.getMinutes()-d.getTimezoneOffset());x.min=d.toISOString().split("T")[0]}})
 
+function siteNav(){
+  const nav=document.getElementById("nav");
+  if(!nav)return;
+  nav.classList.toggle("mobileOpen");
+}
 
-/* Final combined scroll motion */
-(function(){
-  function init(){
-    const body=document.body;if(!body)return;
-    body.classList.add('motion-ready');
-    const selectors='.motion-section,.visualSplit,.heading,.infoCard,.step,.area3d,.visualCopy,.visualPanel,.heroStats span';
-    const els=[...document.querySelectorAll(selectors)];
-    els.forEach((el,i)=>{el.classList.add('reveal');el.classList.add('stagger-'+((i%6)+1));});
-    const io=new IntersectionObserver(entries=>entries.forEach(e=>{
-      if(e.isIntersecting){e.target.classList.add('reveal-visible');io.unobserve(e.target);}
-    }),{threshold:.10,rootMargin:'0px 0px -40px 0px'});
-    els.forEach(e=>io.observe(e));
-    const progress=document.createElement('div');progress.className='scroll-progress';document.body.prepend(progress);
-    let ticking=false;
-    function update(){
-      const max=document.documentElement.scrollHeight-innerHeight;
-      progress.style.width=(max>0?scrollY/max*100:0)+'%';
-      document.querySelectorAll('[data-parallax]').forEach(el=>{
-        const r=el.getBoundingClientRect(),speed=parseFloat(el.dataset.parallax)||.03;
-        const y=(innerHeight/2-(r.top+r.height/2))*speed;
-        el.style.transform='translate3d(0,'+y+'px,0)';
+function openWhatsApp(){
+  window.open(
+    "https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(
+      "Hello Daivik Doorstep Car Care\nI want to book a car wash. Please share available slots."
+    ),
+    "_blank"
+  );
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const dateInput=document.getElementById("bdate");
+  if(dateInput){
+    const d=new Date();
+    d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+    dateInput.min=d.toISOString().split("T")[0];
+  }
+
+  const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const revealTargets=[
+    ".heading",
+    ".infoCard",
+    ".step",
+    ".area3d",
+    ".visualCopy",
+    ".visualPanel",
+    ".heroStats span"
+  ];
+
+  document.body.classList.add("motion-ready");
+
+  const elements=revealTargets.flatMap(selector=>[
+    ...document.querySelectorAll(selector)
+  ]);
+
+  elements.forEach((el,index)=>{
+    el.classList.add("reveal","stagger-"+((index%6)+1));
+  });
+
+  if(reduce){
+    elements.forEach(el=>el.classList.add("reveal-visible"));
+  }else{
+    const observer=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          entry.target.classList.add("reveal-visible");
+          observer.unobserve(entry.target);
+        }
       });
-      ticking=false;
-    }
-    addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});update();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-})();
-
-
-/* React Bits-inspired interaction layer */
-(function(){
-  function initPremium(){
-    document.querySelectorAll('.infoCard,.visualPanel,.priceFloat').forEach(card=>{
-      card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect();card.style.setProperty('--mx',(e.clientX-r.left)+'px');card.style.setProperty('--my',(e.clientY-r.top)+'px')},{passive:true});
+    },{
+      threshold:.08,
+      rootMargin:"0px 0px -35px 0px"
     });
-    document.querySelectorAll('.heroStats b').forEach(el=>{
-      const raw=el.textContent.trim(); const n=parseFloat(raw); if(!Number.isFinite(n))return;
-      const suffix=raw.replace(String(n),''); el.textContent='0'+suffix;
-      const start=performance.now(),duration=900;
-      function tick(now){const p=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-p,3);el.textContent=Math.round(n*ease)+suffix;if(p<1)requestAnimationFrame(tick)}
-      const parent=el.closest('.heroStats span');
-      if(parent){const io=new IntersectionObserver(es=>{if(es.some(x=>x.isIntersecting)){requestAnimationFrame(tick);io.disconnect()}},{threshold:.5});io.observe(parent)}
+
+    elements.forEach(el=>observer.observe(el));
+
+    // Never leave content hidden because an observer is unavailable or delayed.
+    window.setTimeout(()=>{
+      elements.forEach(el=>el.classList.add("reveal-visible"));
+    },1800);
+  }
+
+  // One lightweight parallax system. It writes a CSS variable instead of
+  // replacing the reveal transform, preventing transform conflicts.
+  const parallaxItems=[...document.querySelectorAll("[data-parallax]")];
+  let ticking=false;
+
+  function updateParallax(){
+    parallaxItems.forEach(el=>{
+      const rect=el.getBoundingClientRect();
+      const speed=parseFloat(el.dataset.parallax)||0.03;
+      const y=(window.innerHeight/2-(rect.top+rect.height/2))*speed;
+      el.style.setProperty("--parallax-y",y.toFixed(2)+"px");
+    });
+    ticking=false;
+  }
+
+  if(parallaxItems.length){
+    window.addEventListener("scroll",()=>{
+      if(!ticking){
+        ticking=true;
+        requestAnimationFrame(updateParallax);
+      }
+    },{passive:true});
+    updateParallax();
+  }
+
+  // Scroll progress stays minimal and never creates layout space.
+  const progress=document.createElement("div");
+  progress.className="scroll-progress";
+  document.body.prepend(progress);
+
+  let progressTick=false;
+  function updateProgress(){
+    const max=document.documentElement.scrollHeight-window.innerHeight;
+    progress.style.width=(max>0?(window.scrollY/max)*100:0)+"%";
+    progressTick=false;
+  }
+
+  window.addEventListener("scroll",()=>{
+    if(!progressTick){
+      progressTick=true;
+      requestAnimationFrame(updateProgress);
+    }
+  },{passive:true});
+  updateProgress();
+
+  if(!reduce){
+    document.querySelectorAll(".infoCard,.visualPanel,.priceFloat").forEach(card=>{
+      card.addEventListener("pointermove",event=>{
+        const rect=card.getBoundingClientRect();
+        card.style.setProperty("--mx",(event.clientX-rect.left)+"px");
+        card.style.setProperty("--my",(event.clientY-rect.top)+"px");
+        card.style.setProperty("--sx",(event.clientX-rect.left)+"px");
+        card.style.setProperty("--sy",(event.clientY-rect.top)+"px");
+      },{passive:true});
+    });
+
+    document.querySelectorAll(".btn").forEach(button=>{
+      button.addEventListener("pointermove",event=>{
+        const rect=button.getBoundingClientRect();
+        const x=(event.clientX-rect.left-rect.width/2)*.04;
+        const y=(event.clientY-rect.top-rect.height/2)*.04;
+        button.style.setProperty("--mag-x",x.toFixed(2)+"px");
+        button.style.setProperty("--mag-y",y.toFixed(2)+"px");
+      },{passive:true});
+
+      button.addEventListener("pointerleave",()=>{
+        button.style.setProperty("--mag-x","0px");
+        button.style.setProperty("--mag-y","0px");
+      });
     });
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initPremium);else initPremium();
-})();
 
+  // Hero count-up without wrapping/replacing heading content.
+  document.querySelectorAll(".heroStats b").forEach(el=>{
+    const raw=el.textContent.trim();
+    const match=raw.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    if(!match)return;
 
-/* Premium motion controller */
-(function(){
-  function premiumMotion(){
-    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('.infoCard,.serviceCard,.priceCard,.planCard,.addonCard,.step,.reviewCard,.area3d,.visualPanel').forEach(el=>el.setAttribute('data-spotlight',''));
-    if(!reduce){
-      document.querySelectorAll('[data-spotlight]').forEach(el=>el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();el.style.setProperty('--sx',(e.clientX-r.left)+'px');el.style.setProperty('--sy',(e.clientY-r.top)+'px')},{passive:true}));
-      document.querySelectorAll('.btn').forEach(btn=>{btn.classList.add('magnetic');btn.addEventListener('pointermove',e=>{const r=btn.getBoundingClientRect();btn.style.transform='translate('+((e.clientX-r.left-r.width/2)*.06)+'px,'+((e.clientY-r.top-r.height/2)*.06)+'px)'},{passive:true});btn.addEventListener('pointerleave',()=>btn.style.transform='')});
-    }
-    const h=document.querySelector('.heroCopy h1');
-    if(h&&!reduce&&!h.dataset.words){h.dataset.words='1';const span=h.querySelector('span');const parts=[...h.childNodes];parts.forEach(n=>{if(n===span)return;if(n.nodeType===3){const frag=document.createDocumentFragment();n.textContent.trim().split(/(\s+)/).forEach((w,i)=>{if(!w.trim()){frag.append(w);return}const s=document.createElement('span');s.className='motion-word';s.style.animationDelay=(i*.055)+'s';s.textContent=w;frag.append(s);});n.replaceWith(frag)}});if(span){const s=document.createElement('span');s.className='motion-word';s.style.animationDelay='.25s';s.innerHTML=span.innerHTML;span.replaceWith(s)}}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',premiumMotion);else premiumMotion();
-})();
+    const target=Number(match[1]);
+    const suffix=match[2];
+    let started=false;
+
+    const observer=new IntersectionObserver(entries=>{
+      if(started||!entries.some(entry=>entry.isIntersecting))return;
+      started=true;
+      const start=performance.now();
+      const duration=800;
+
+      function tick(now){
+        const p=Math.min(1,(now-start)/duration);
+        const eased=1-Math.pow(1-p,3);
+        el.textContent=Math.round(target*eased)+suffix;
+        if(p<1)requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+      observer.disconnect();
+    },{threshold:.5});
+
+    observer.observe(el);
+  });
+});
