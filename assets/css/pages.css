@@ -339,3 +339,40 @@ body.motion-ready {
     visibility: visible !important;
   }
 }
+
+/* FINAL MIDDLE-CONTENT VISIBILITY FALLBACK */
+body.motion-ready section.hero.hero3d,
+body.motion-ready section.sec.motion-section,
+body.motion-ready section.visualShowcase,
+body.motion-ready section.light,
+body.motion-ready section.sec:last-of-type {
+  visibility: visible !important;
+}
+body.motion-ready section.hero.hero3d .hero3dGrid,
+body.motion-ready section.hero.hero3d .heroCopy,
+body.motion-ready section.hero.hero3d .realCarStage,
+body.motion-ready section.hero.hero3d .realCarFrame,
+body.motion-ready section.sec.motion-section .heading,
+body.motion-ready section.sec.motion-section .infoGrid3d,
+body.motion-ready section.sec.motion-section .infoCard {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+.infoGrid3d {
+  display: grid !important;
+  grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+  gap: 18px !important;
+}
+.infoGrid3d .infoCard {
+  display: block !important;
+  min-height: 150px;
+}
+@media (max-width: 760px) {
+  .infoGrid3d {
+    grid-template-columns: 1fr !important;
+  }
+  .infoGrid3d .infoCard {
+    min-height: 0;
+  }
+}
