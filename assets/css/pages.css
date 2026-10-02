@@ -241,3 +241,101 @@ body.motion-ready {
     height: 235px !important;
   }
 }
+
+/* MOBILE HERO HARD RESET — must render independently of motion layers */
+@media (max-width: 900px) {
+  section.hero.hero3d {
+    display: block !important;
+    position: relative !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding: 34px 0 44px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  section.hero.hero3d::before {
+    z-index: 0 !important;
+    pointer-events: none !important;
+  }
+
+  section.hero.hero3d > .heroGlow {
+    z-index: 1 !important;
+    pointer-events: none !important;
+  }
+
+  section.hero.hero3d > .hero3dGrid {
+    display: flex !important;
+    position: relative !important;
+    z-index: 10 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 24px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  section.hero.hero3d .heroCopy {
+    display: block !important;
+    position: relative !important;
+    z-index: 20 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  section.hero.hero3d .heroCopy > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  section.hero.hero3d .heroCopy h1,
+  section.hero.hero3d .heroCopy p,
+  section.hero.hero3d .heroCopy .badge,
+  section.hero.hero3d .heroCopy .btn,
+  section.hero.hero3d .heroCopy .heroStats {
+    position: relative !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  section.hero.hero3d .realCarStage {
+    display: grid !important;
+    position: relative !important;
+    z-index: 10 !important;
+    width: 100% !important;
+    height: 270px !important;
+    min-height: 270px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  section.hero.hero3d .realCarFrame {
+    display: block !important;
+    position: relative !important;
+    width: 95% !important;
+    height: 235px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  section.hero.hero3d .realCarImage {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
