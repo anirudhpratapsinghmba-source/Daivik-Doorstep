@@ -94,3 +94,22 @@ body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready
 @keyframes realDropMove{0%,100%{transform:translate3d(0,0,0) rotate(0);opacity:.55}50%{transform:translate3d(3px,-12px,0) rotate(6deg);opacity:1}}
 @media(max-width:900px){.realCarStage{height:390px}.realCarFrame{height:300px;width:95%;transform:none}.realCarFrame{animation:none}}
 @media(max-width:650px){.realCarStage{height:330px}.realCarFrame{height:245px;border-radius:20px}.realBadge{font-size:7px;padding:8px 10px;right:10px;bottom:10px}.realDrop{width:8px;height:14px}}
+
+
+/* REACT BITS-INSPIRED PREMIUM INTERACTIONS — adapted for the existing vanilla site */
+.heading h2,.heroCopy h1{position:relative}
+.heroCopy h1 span{background:linear-gradient(100deg,#fff 15%,#8ff0b1 45%,#fff 70%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:dbShine 5s linear infinite}
+@keyframes dbShine{to{background-position:-220% center}}
+.infoCard{position:relative;overflow:hidden;isolation:isolate;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease,border-color .35s ease}
+.infoCard::before{content:"";position:absolute;inset:-1px;background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(35,205,105,.20),transparent 62%);opacity:0;transition:opacity .35s ease;pointer-events:none;z-index:-1}
+.infoCard:hover{transform:translateY(-7px) scale(1.015);box-shadow:0 22px 45px rgba(5,25,32,.12);border-color:rgba(35,205,105,.35)}
+.infoCard:hover::before{opacity:1}
+.btn{position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .25s ease}
+.btn::after{content:"";position:absolute;top:-60%;left:-35%;width:35%;height:220%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);transform:skewX(-20deg) translateX(-180%);transition:transform .65s ease;pointer-events:none}
+.btn:hover::after{transform:skewX(-20deg) translateX(520%)}
+.heroStats span{transition:transform .3s ease,box-shadow .3s ease}
+.heroStats span:hover{transform:translateY(-4px)}
+.visualPanel,.realCarFrame{will-change:transform}
+.visualPanel{transition:box-shadow .4s ease,border-color .4s ease}
+.visualPanel:hover{box-shadow:0 28px 65px rgba(3,15,20,.22);border-color:rgba(35,205,105,.28)}
+@media(prefers-reduced-motion:reduce){.heroCopy h1 span{animation:none}.infoCard,.btn,.heroStats span{transition:none}}
