@@ -1,0 +1,3 @@
+/* Firebase booking integration placeholder.
+   This file will be connected after the Firebase project configuration is supplied.
+*/
