@@ -154,3 +154,38 @@ body{overflow-x:hidden}
 .visualShowcase {
   overflow: clip;
 }
+
+/* FINAL HOMEPAGE VIEWPORT GUARD */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+body.motion-ready {
+  overflow-x: clip;
+}
+.visualShowcase,
+.visualShowcase .c,
+.visualSplit {
+  max-width: 100%;
+}
+.visualPanel {
+  transform: translate3d(0,var(--parallax-y,0px),0);
+  will-change: transform;
+}
+@media (max-width: 760px) {
+  .visualShowcase {
+    padding-top: 56px;
+  }
+  .visualSplit {
+    min-height: auto;
+    margin-bottom: 34px;
+    gap: 28px;
+  }
+  .visualPanel {
+    height: 300px;
+  }
+  .hero3d {
+    min-height: 620px;
+  }
+}
