@@ -118,8 +118,6 @@ body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready
 /* PREMIUM MOTION SYSTEM — MotionSites/React-Bits-inspired, vanilla implementation */
 html{scroll-behavior:smooth}
 body{overflow-x:hidden}
-.motion-cursor{position:fixed;width:280px;height:280px;border-radius:50%;pointer-events:none;z-index:9998;background:radial-gradient(circle,rgba(42,210,112,.12),transparent 62%);filter:blur(2px);transform:translate(-50%,-50%);opacity:0;transition:opacity .3s ease;mix-blend-mode:multiply}
-body.cursor-ready .motion-cursor{opacity:1}
 [data-spotlight]{position:relative;overflow:hidden}
 [data-spotlight]::after{content:"";position:absolute;inset:0;background:radial-gradient(320px circle at var(--sx,50%) var(--sy,50%),rgba(255,255,255,.10),transparent 55%);opacity:0;transition:opacity .25s ease;pointer-events:none}
 [data-spotlight]:hover::after{opacity:1}
@@ -131,8 +129,8 @@ body.cursor-ready .motion-cursor{opacity:1}
 .magnetic{will-change:transform}
 .section-line{height:1px;width:100%;background:linear-gradient(90deg,transparent,rgba(22,163,74,.35),transparent);transform:scaleX(.2);transform-origin:center;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
 .section-line.reveal-visible{transform:scaleX(1)}
-@media(max-width:700px){.motion-cursor{display:none}.motion-word{animation-duration:.6s}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.heroCopy h1 span{animation:none}.motion-cursor{display:none}.motion-word{opacity:1;transform:none;filter:none;animation:none}}
+@media(max-width:700px){.motion-word{animation-duration:.6s}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.heroCopy h1 span{animation:none}.motion-word{opacity:1;transform:none;filter:none;animation:none}}
 
 
 /* Track page premium status UI */
