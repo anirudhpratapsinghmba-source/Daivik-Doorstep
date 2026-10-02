@@ -113,3 +113,23 @@ body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready
 .visualPanel{transition:box-shadow .4s ease,border-color .4s ease}
 .visualPanel:hover{box-shadow:0 28px 65px rgba(3,15,20,.22);border-color:rgba(35,205,105,.28)}
 @media(prefers-reduced-motion:reduce){.heroCopy h1 span{animation:none}.infoCard,.btn,.heroStats span{transition:none}}
+
+
+/* PREMIUM MOTION SYSTEM — MotionSites/React-Bits-inspired, vanilla implementation */
+html{scroll-behavior:smooth}
+body{overflow-x:hidden}
+.motion-cursor{position:fixed;width:280px;height:280px;border-radius:50%;pointer-events:none;z-index:9998;background:radial-gradient(circle,rgba(42,210,112,.12),transparent 62%);filter:blur(2px);transform:translate(-50%,-50%);opacity:0;transition:opacity .3s ease;mix-blend-mode:multiply}
+body.cursor-ready .motion-cursor{opacity:1}
+[data-spotlight]{position:relative;overflow:hidden}
+[data-spotlight]::after{content:"";position:absolute;inset:0;background:radial-gradient(320px circle at var(--sx,50%) var(--sy,50%),rgba(255,255,255,.10),transparent 55%);opacity:0;transition:opacity .25s ease;pointer-events:none}
+[data-spotlight]:hover::after{opacity:1}
+.heroCopy h1{letter-spacing:-.045em;text-wrap:balance}
+.heroCopy h1 span{background:linear-gradient(100deg,#fff 0%,#b8ffd0 30%,#fff 55%,#79e8a5 80%,#fff 100%);background-size:260% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:premiumShine 6s linear infinite}
+@keyframes premiumShine{to{background-position:-260% center}}
+.motion-word{display:inline-block;opacity:0;transform:translateY(105%);filter:blur(7px);animation:wordReveal .85s cubic-bezier(.2,.75,.2,1) forwards}
+@keyframes wordReveal{to{opacity:1;transform:none;filter:none}}
+.magnetic{will-change:transform}
+.section-line{height:1px;width:100%;background:linear-gradient(90deg,transparent,rgba(22,163,74,.35),transparent);transform:scaleX(.2);transform-origin:center;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+.section-line.reveal-visible{transform:scaleX(1)}
+@media(max-width:700px){.motion-cursor{display:none}.motion-word{animation-duration:.6s}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.heroCopy h1 span{animation:none}.motion-cursor{display:none}.motion-word{opacity:1;transform:none;filter:none;animation:none}}
