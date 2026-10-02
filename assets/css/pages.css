@@ -6,12 +6,12 @@
 html{scroll-behavior:smooth}
 body{overflow-x:hidden}
 .scroll-progress{position:fixed;top:0;left:0;width:0;height:3px;background:linear-gradient(90deg,#16a34a,#66e6ff);z-index:9999;box-shadow:0 0 12px #16a34a;pointer-events:none}
-.reveal{opacity:0;transform:translateY(38px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal{transform:translateY(38px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
 .reveal.reveal-visible{opacity:1;transform:none}
-.reveal-left{opacity:0;transform:translateX(-45px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
-.reveal-right{opacity:0;transform:translateX(45px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal-left{transform:translateX(-45px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal-right{transform:translateX(45px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
 .reveal-left.reveal-visible,.reveal-right.reveal-visible{opacity:1;transform:none}
-.reveal-scale{opacity:0;transform:scale(.9) translateY(20px);transition:opacity .75s ease,transform .75s cubic-bezier(.2,.7,.2,1)}
+.reveal-scale{transform:scale(.9) translateY(20px);transition:opacity .75s ease,transform .75s cubic-bezier(.2,.7,.2,1)}
 .reveal-scale.reveal-visible{opacity:1;transform:scale(1) translateY(0)}
 .stagger-1{transition-delay:.06s}.stagger-2{transition-delay:.12s}.stagger-3{transition-delay:.18s}.stagger-4{transition-delay:.24s}.stagger-5{transition-delay:.30s}.stagger-6{transition-delay:.36s}
 .motion-card{transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s ease}
@@ -22,3 +22,7 @@ body{overflow-x:hidden}
 [data-parallax]{will-change:transform}
 @media(max-width:650px){.reveal{transform:translateY(25px)}.reveal-left{transform:translateX(-25px)}.reveal-right{transform:translateX(25px)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal,.reveal-left,.reveal-right,.reveal-scale{opacity:1!important;transform:none!important;transition:none!important}.motion-title .word{opacity:1;transform:none;animation:none!important}.scroll-progress{display:none}}
+
+/* Safe motion: content remains visible even if JavaScript is unavailable */
+body.motion-ready .reveal{opacity:0}
+body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready .reveal-scale{opacity:0}
