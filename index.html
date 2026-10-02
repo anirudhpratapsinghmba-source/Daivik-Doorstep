@@ -52,12 +52,12 @@
       <div class="summaryMain"><div><small>SERVICE</small><h3 id="sumService">—</h3><p id="sumCar">—</p></div><div class="sumPrice"><small>TOTAL</small><strong id="sumPrice">₹0</strong></div></div>
       <div class="summaryGrid"><div><small>CUSTOMER</small><b id="sumName">—</b></div><div><small>DATE & TIME</small><b id="sumSlot">—</b></div><div class="fullField"><small>ADDRESS</small><b id="sumAddress">—</b></div></div>
       <div class="savedNotice">✓ Booking details saved on this device. Keep this booking ID for reference.</div>
-      <div class="summaryActions"><button class="btn green" onclick="sendSavedBooking()">📲 Confirm on WhatsApp</button><button class="btn outlineDark" onclick="editBooking()">Edit Details</button></div>
+      <div class="savedNotice" style="margin-top:12px">Booking Status: <b id="firebaseStatus">Pending Confirmation</b></div><button class="btn outlineDark" id="cancelBookingBtn" onclick="cancelBooking()" style="margin-top:10px">Cancel Booking</button><div class="summaryActions"><button class="btn green" onclick="sendSavedBooking()">📲 Confirm on WhatsApp</button><button class="btn outlineDark" onclick="editBooking()">Edit Details</button></div>
     </div>
   </div>
 </div>
 </section>
-<footer><div class="c"><div class="foot"><div><b>DAIVIK</b><p>DOORSTEP CAR CARE</p><p>Professional car care at your doorstep.</p></div><div><b>QUICK LINKS</b><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#membership">Monthly Plans</a></div><div><b>SERVICES</b><a href="#services">Basic Wash</a><a href="#services">Medium Wash</a><a href="#services">Premium Wash</a></div><div><b>CONTACT</b><a href="#booking">Book Online</a><a href="#faq">FAQs</a></div></div><div class="copy">© 2026 Daivik Doorstep Car Care. All rights reserved.</div></div></footer>
+<section class="sec light" id="track-booking"><div class="c"><div class="heading"><div class="ey">● TRACK YOUR BOOKING</div><h2>Check Booking Status</h2><p>Enter the booking ID shown after booking.</p></div><div class="box" style="max-width:620px;margin:auto"><div style="display:grid;grid-template-columns:1fr auto;gap:10px"><input id="trackBookingId" placeholder="e.g. DVK-AB12CD34"><button class="btn green" onclick="trackBooking()">Check Status</button></div><div class="result" id="trackResult" style="margin-top:14px"><b>—</b></div></div></div></section><footer><div class="c"><div class="foot"><div><b>DAIVIK</b><p>DOORSTEP CAR CARE</p><p>Professional car care at your doorstep.</p></div><div><b>QUICK LINKS</b><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#membership">Monthly Plans</a></div><div><b>SERVICES</b><a href="#services">Basic Wash</a><a href="#services">Medium Wash</a><a href="#services">Premium Wash</a></div><div><b>CONTACT</b><a href="#booking">Book Online</a><a href="#faq">FAQs</a></div></div><div class="copy">© 2026 Daivik Doorstep Car Care. All rights reserved.</div></div></footer>
 <a class="wa" href="#" onclick="openWhatsApp();return false">☎</a>
 <script>
 const WHATSAPP_NUMBER="917983558954";
@@ -121,4 +121,4 @@ function editBooking(){$("bookingSummary").classList.remove("show");$("bookingPa
 document.addEventListener("DOMContentLoaded",()=>{
  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); $("bdate").min=d.toISOString().split("T")[0];
 });
-</script></body></html>
+</script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="assets/js/firebase-config.js"></script><script src="assets/js/firebase-booking.js"></script></body></html>
