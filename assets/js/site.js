@@ -168,3 +168,5 @@ document.addEventListener("DOMContentLoaded",()=>{
     observer.observe(el);
   });
 });
+
+/* cache marker: homepage-motion-final-20261003 */
