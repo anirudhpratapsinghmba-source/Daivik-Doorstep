@@ -96,3 +96,27 @@
     $("trackResult").classList.add("show");
   };
 })();
+window.cancelBooking = async function () {
+  const raw = localStorage.getItem("daivikBooking");
+  if (!raw) return alert("No booking found on this device.");
+  const booking = JSON.parse(raw);
+  if (booking.scheduledAt && Date.now() > Number(booking.scheduledAt) - 7200000) {
+    return alert("Cancellation is locked within 2 hours of the scheduled service.");
+  }
+  if (!confirm("Cancel booking " + booking.id + "?")) return;
+  try {
+    const currentUser = firebase.auth().currentUser || (await firebase.auth().signInAnonymously()).user;
+    await firebase.firestore().collection("bookings").doc(booking.id).update({
+      status: "Cancelled",
+      cancelledBy: currentUser.uid,
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await firebase.firestore().collection("bookingStatus").doc(booking.id).set({
+      status: "Cancelled",
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  } catch (e) {
+    console.error(e);
+    alert("Cancellation could not be completed. Please contact Daivik.");
+  }
+};
