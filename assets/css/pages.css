@@ -189,3 +189,55 @@ body.motion-ready {
     min-height: 620px;
   }
 }
+
+/* HERO VISIBILITY HOTFIX
+   The hero is structural content, never an animated reveal target. */
+.hero3d .hero3dGrid,
+.hero3d .heroCopy,
+.hero3d .realCarStage,
+.hero3d .realCarFrame {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.hero3d .hero3dGrid {
+  z-index: 5;
+}
+.hero3d .heroCopy {
+  transform: none !important;
+}
+@media (max-width: 900px) {
+  .hero3d {
+    min-height: 0 !important;
+    padding-bottom: 42px;
+  }
+  .hero3dGrid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 22px !important;
+  }
+  .heroCopy {
+    padding-top: 8px !important;
+  }
+  .hero3d h1 {
+    margin-top: 18px;
+    margin-bottom: 16px;
+  }
+  .realCarStage {
+    height: 310px !important;
+  }
+}
+@media (max-width: 650px) {
+  .hero3d {
+    padding-top: 34px !important;
+  }
+  .hero3d h1 {
+    font-size: clamp(38px, 11vw, 48px) !important;
+    line-height: 1.03;
+  }
+  .realCarStage {
+    height: 270px !important;
+  }
+  .realCarFrame {
+    height: 235px !important;
+  }
+}
