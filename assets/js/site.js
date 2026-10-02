@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded",()=>{const d=new Date();const x=doc
   function initScrollMotion(){
     const body=document.body;
     if(!body) return;
+    body.classList.add('motion-ready');
     if(!document.querySelector('.scroll-progress')){
       const bar=document.createElement('div');
       bar.className='scroll-progress';
