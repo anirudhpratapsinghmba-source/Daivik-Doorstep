@@ -4,70 +4,31 @@ function openWhatsApp(){window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+en
 document.addEventListener("DOMContentLoaded",()=>{const d=new Date();const x=document.getElementById("bdate");if(x){d.setMinutes(d.getMinutes()-d.getTimezoneOffset());x.min=d.toISOString().split("T")[0]}})
 
 
-/* Global scroll motion */
+/* Final combined scroll motion */
 (function(){
-  function initScrollMotion(){
-    const body=document.body;
-    if(!body) return;
+  function init(){
+    const body=document.body;if(!body)return;
     body.classList.add('motion-ready');
-    if(!document.querySelector('.scroll-progress')){
-      const bar=document.createElement('div');
-      bar.className='scroll-progress';
-      document.body.prepend(bar);
-    }
-
-    const candidates=[
-      '.sec','.heroCopy','.heading','.infoCard','.serviceCard','.priceCard','.planCard',
-      '.addonCard','.step','.faqItem','.reviewCard','.area3d','.bookingBox','.contactCard',
-      '.pricingTable','.membershipTable','.heroStats span'
-    ];
-    const seen=new Set();
-    let index=0;
-    candidates.forEach(sel=>{
-      document.querySelectorAll(sel).forEach(el=>{
-        if(seen.has(el)) return;
-        seen.add(el);
-        if(!el.classList.contains('hero3d') && !el.classList.contains('heroCopy')) el.classList.add('reveal');
-        const delay=(index++%6)+1;
-        el.classList.add('stagger-'+delay);
-      });
-    });
-
-    document.querySelectorAll('.infoCard,.serviceCard,.priceCard,.planCard,.addonCard,.step,.contactCard').forEach(el=>el.classList.add('motion-card'));
-
-    const observer=new IntersectionObserver((entries)=>{
-      entries.forEach(entry=>{
-        if(entry.isIntersecting){
-          entry.target.classList.add('reveal-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },{threshold:.12,rootMargin:'0px 0px -50px 0px'});
-    document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.reveal-scale').forEach(el=>observer.observe(el));
-
-    const bar=document.querySelector('.scroll-progress');
+    const selectors='.motion-section,.visualSplit,.heading,.infoCard,.step,.area3d,.visualCopy,.visualPanel,.heroStats span';
+    const els=[...document.querySelectorAll(selectors)];
+    els.forEach((el,i)=>{el.classList.add('reveal');el.classList.add('stagger-'+((i%6)+1));});
+    const io=new IntersectionObserver(entries=>entries.forEach(e=>{
+      if(e.isIntersecting){e.target.classList.add('reveal-visible');io.unobserve(e.target);}
+    }),{threshold:.10,rootMargin:'0px 0px -40px 0px'});
+    els.forEach(e=>io.observe(e));
+    const progress=document.createElement('div');progress.className='scroll-progress';document.body.prepend(progress);
     let ticking=false;
-    const update=()=>{
-      const max=document.documentElement.scrollHeight-window.innerHeight;
-      bar.style.width=(max>0?(window.scrollY/max)*100:0)+'%';
+    function update(){
+      const max=document.documentElement.scrollHeight-innerHeight;
+      progress.style.width=(max>0?scrollY/max*100:0)+'%';
       document.querySelectorAll('[data-parallax]').forEach(el=>{
-        const speed=parseFloat(el.dataset.parallax)||.08;
-        const rect=el.getBoundingClientRect();
-        const offset=(window.innerHeight/2-(rect.top+rect.height/2))*speed;
-        el.style.transform='translate3d(0,'+offset+'px,0)';
+        const r=el.getBoundingClientRect(),speed=parseFloat(el.dataset.parallax)||.03;
+        const y=(innerHeight/2-(r.top+r.height/2))*speed;
+        el.style.transform='translate3d(0,'+y+'px,0)';
       });
       ticking=false;
-    };
-    window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
-    update();
-
-    document.querySelectorAll('h1,h2').forEach((heading)=>{
-      if(heading.dataset.motionTitle) return;
-      heading.dataset.motionTitle='1';
-      const parts=heading.textContent.trim().split(/(\s+)/);
-      heading.innerHTML=parts.map((p,i)=>/\s+/.test(p)?p:'<span class="word" style="animation-delay:'+(i*.035)+'s">'+p+'</span>').join('');
-    });
+    }
+    addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});update();
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initScrollMotion);
-  else initScrollMotion();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
