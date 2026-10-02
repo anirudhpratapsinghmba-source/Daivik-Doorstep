@@ -32,3 +32,22 @@ document.addEventListener("DOMContentLoaded",()=>{const d=new Date();const x=doc
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+
+
+/* React Bits-inspired interaction layer */
+(function(){
+  function initPremium(){
+    document.querySelectorAll('.infoCard,.visualPanel,.priceFloat').forEach(card=>{
+      card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect();card.style.setProperty('--mx',(e.clientX-r.left)+'px');card.style.setProperty('--my',(e.clientY-r.top)+'px')},{passive:true});
+    });
+    document.querySelectorAll('.heroStats b').forEach(el=>{
+      const raw=el.textContent.trim(); const n=parseFloat(raw); if(!Number.isFinite(n))return;
+      const suffix=raw.replace(String(n),''); el.textContent='0'+suffix;
+      const start=performance.now(),duration=900;
+      function tick(now){const p=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-p,3);el.textContent=Math.round(n*ease)+suffix;if(p<1)requestAnimationFrame(tick)}
+      const parent=el.closest('.heroStats span');
+      if(parent){const io=new IntersectionObserver(es=>{if(es.some(x=>x.isIntersecting)){requestAnimationFrame(tick);io.disconnect()}},{threshold:.5});io.observe(parent)}
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initPremium);else initPremium();
+})();
