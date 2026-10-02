@@ -67,3 +67,12 @@ body.motion-ready .reveal-left,body.motion-ready .reveal-right,body.motion-ready
 .reveal-scale.reveal-visible{opacity:1;transform:scale(1) translateY(0)}
 .stagger-1{transition-delay:.05s}.stagger-2{transition-delay:.12s}.stagger-3{transition-delay:.19s}.stagger-4{transition-delay:.26s}.stagger-5{transition-delay:.33s}.stagger-6{transition-delay:.40s}
 @media(prefers-reduced-motion:reduce){.reveal,.reveal-left,.reveal-right,.reveal-scale{opacity:1!important;transform:none!important;transition:none!important}}
+
+/* Mobile navigation */
+@media(max-width:650px){
+  .nav{position:relative}
+  .nav nav.mobileOpen{display:flex!important;position:absolute;top:64px;left:0;right:0;flex-direction:column;gap:0;padding:10px;background:rgba(255,255,255,.98);border:1px solid #e3e8ea;border-radius:0 0 16px 16px;box-shadow:0 18px 35px rgba(7,20,28,.14);z-index:50}
+  .nav nav.mobileOpen a{padding:12px 14px;border-radius:10px}
+  .nav nav.mobileOpen a:last-child{margin-top:4px;text-align:center}
+  .menu{position:relative;z-index:60}
+}
