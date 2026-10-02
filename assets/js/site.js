@@ -51,3 +51,23 @@ document.addEventListener("DOMContentLoaded",()=>{const d=new Date();const x=doc
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initPremium);else initPremium();
 })();
+
+
+/* Premium motion controller */
+(function(){
+  function premiumMotion(){
+    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('.infoCard,.serviceCard,.priceCard,.planCard,.addonCard,.step,.reviewCard,.area3d,.visualPanel').forEach(el=>el.setAttribute('data-spotlight',''));
+    if(!reduce){
+      const cursor=document.createElement('div');cursor.className='motion-cursor';document.body.appendChild(cursor);document.body.classList.add('cursor-ready');
+      let cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy,active=false;
+      addEventListener('pointermove',e=>{tx=e.clientX;ty=e.clientY;active=true},{passive:true});
+      function cursorTick(){cx+=(tx-cx)*.12;cy+=(ty-cy)*.12;cursor.style.left=cx+'px';cursor.style.top=cy+'px';if(active)requestAnimationFrame(cursorTick)}requestAnimationFrame(cursorTick);
+      document.querySelectorAll('[data-spotlight]').forEach(el=>el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();el.style.setProperty('--sx',(e.clientX-r.left)+'px');el.style.setProperty('--sy',(e.clientY-r.top)+'px')},{passive:true}));
+      document.querySelectorAll('.btn').forEach(btn=>{btn.classList.add('magnetic');btn.addEventListener('pointermove',e=>{const r=btn.getBoundingClientRect();btn.style.transform='translate('+((e.clientX-r.left-r.width/2)*.06)+'px,'+((e.clientY-r.top-r.height/2)*.06)+'px)'},{passive:true});btn.addEventListener('pointerleave',()=>btn.style.transform='')});
+    }
+    const h=document.querySelector('.heroCopy h1');
+    if(h&&!reduce&&!h.dataset.words){h.dataset.words='1';const span=h.querySelector('span');const parts=[...h.childNodes];parts.forEach(n=>{if(n===span)return;if(n.nodeType===3){const frag=document.createDocumentFragment();n.textContent.trim().split(/(\s+)/).forEach((w,i)=>{if(!w.trim()){frag.append(w);return}const s=document.createElement('span');s.className='motion-word';s.style.animationDelay=(i*.055)+'s';s.textContent=w;frag.append(s);});n.replaceWith(frag)}});if(span){const s=document.createElement('span');s.className='motion-word';s.style.animationDelay='.25s';s.innerHTML=span.innerHTML;span.replaceWith(s)}}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',premiumMotion);else premiumMotion();
+})();
