@@ -52,7 +52,7 @@
       <div class="summaryMain"><div><small>SERVICE</small><h3 id="sumService">—</h3><p id="sumCar">—</p></div><div class="sumPrice"><small>TOTAL</small><strong id="sumPrice">₹0</strong></div></div>
       <div class="summaryGrid"><div><small>CUSTOMER</small><b id="sumName">—</b></div><div><small>DATE & TIME</small><b id="sumSlot">—</b></div><div class="fullField"><small>ADDRESS</small><b id="sumAddress">—</b></div></div>
       <div class="savedNotice">✓ Booking details saved on this device. Keep this booking ID for reference.</div>
-      <div class="savedNotice" style="margin-top:12px">Booking Status: <b id="firebaseStatus">Pending Confirmation</b></div><div class="summaryActions"><button class="btn green" onclick="sendSavedBooking()">📲 Confirm on WhatsApp</button><button class="btn outlineDark" onclick="editBooking()">Edit Details</button></div>
+      <div class="savedNotice" style="margin-top:12px">Booking Status: <b id="firebaseStatus">Pending Confirmation</b></div><button class="btn outlineDark" id="cancelBookingBtn" onclick="cancelBooking()" style="margin-top:10px">Cancel Booking</button><div class="summaryActions"><button class="btn green" onclick="sendSavedBooking()">📲 Confirm on WhatsApp</button><button class="btn outlineDark" onclick="editBooking()">Edit Details</button></div>
     </div>
   </div>
 </div>
