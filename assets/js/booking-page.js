@@ -53,20 +53,6 @@ function openMapsForLocation(){
   openLocationModal();
   const mapWrap=$("locationMapModal");
   if(mapWrap)mapWrap.classList.add("open");
-  setModalStatus("📍 Google Maps खोल रहा हूँ. वहाँ अपनी current location confirm करें, फिर Back दबाकर Daivik पर लौटें. लौटते ही fare calculate होगा.");
-  sessionStorage.setItem("daivikLocationPending","1");
-  sessionStorage.setItem("daivikLocationStartedAt",String(Date.now()));
-  const mapsIntent="google.navigation:q=My+Location";
-  const mapsWeb="https://www.google.com/maps/search/?api=1&query=My%20Location";
-  try{
-    const a=document.createElement("a");a.href=mapsIntent;a.style.display="none";document.body.appendChild(a);a.click();a.remove();
-  }catch(err){console.warn("Maps app launch failed",err)}
-  setTimeout(()=>{if(document.visibilityState==="visible")window.location.href=mapsWeb},1200);
-}
-function openMapsForLocation(){
-  openLocationModal();
-  const mapWrap=$("locationMapModal");
-  if(mapWrap)mapWrap.classList.add("open");
 
   if(!navigator.geolocation){
     setModalStatus("GPS is not supported by this browser. Use the website map to place the exact pin.",true);
