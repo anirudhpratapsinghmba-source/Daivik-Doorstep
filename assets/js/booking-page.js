@@ -97,9 +97,4 @@ document.addEventListener("DOMContentLoaded",()=>{
   const w=q.get("wash"),p=q.get("plan");
   if(w&&P[Object.keys(P)[0]])$("bwash").value=w;
   if(p)$("bookingType").textContent=p.charAt(0).toUpperCase()+p.slice(1)+" Monthly Plan";
-  setTimeout(resumeLocationAfterMaps,500);
-});
-window.addEventListener("pageshow",()=>setTimeout(resumeLocationAfterMaps,500));
-document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible")setTimeout(resumeLocationAfterMaps,700);
 });
