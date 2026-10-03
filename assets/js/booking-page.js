@@ -19,6 +19,10 @@ function updateLocation(lat,lng,address="",accuracy=null){
 async function reverseGeocode(lat,lng){
  try{const r=await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="+encodeURIComponent(lat)+"&lon="+encodeURIComponent(lng),{headers:{Accept:"application/json"}});if(!r.ok)throw new Error("reverse geocode failed");const d=await r.json();return d.display_name||""}catch(e){return""}
 }
+function openLocationModal(){const m=$("locationModal");if(m){m.classList.add("open");m.setAttribute("aria-hidden","false")}setTimeout(()=>{if(window.bookingMap)window.bookingMap.invalidateSize()},120)}
+function closeLocationModal(){const m=$("locationModal");if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true")}}
+function setModalStatus(message,error=false){const el=$("modalLocationStatus");if(el){el.textContent=message;el.classList.toggle("error",!!error)}}
+function openMapPicker(){openLocationModal();const mapWrap=$("locationMapModal");if(mapWrap)mapWrap.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),180);setModalStatus("Tap anywhere on the map to place your exact service pin. You can drag the pin afterwards.")}
 function ensureBookingMap(){
  if(window.bookingMap)return;
  const mapEl=$("bookingMap");if(!mapEl)return;
@@ -36,8 +40,8 @@ function setCustomerPin(lat,lng,accuracy=null,fromMap=false){
  window.customerMarker=L.marker([lat,lng],{draggable:true}).addTo(window.bookingMap).bindPopup("Your service location").openPopup();
  if(Number.isFinite(accuracy)&&accuracy>0)window.customerAccuracyCircle=L.circle([lat,lng],{radius:accuracy,weight:1,fillOpacity:.08}).addTo(window.bookingMap);
  window.customerMarker.on("dragend",async e=>{const p=e.target.getLatLng();setCustomerPin(p.lat,p.lng,null,true)});
- setLocationStatus("📍 Pin placed. Getting address…");
- reverseGeocode(lat,lng).then(address=>updateLocation(lat,lng,address,accuracy));
+ setLocationStatus("📍 Pin placed. Getting address…");setModalStatus("📍 Pin placed. Getting exact address…");
+ reverseGeocode(lat,lng).then(address=>{updateLocation(lat,lng,address,accuracy);setModalStatus("✓ Exact location selected. Fare calculated from your GPS/map pin.");});
  if(fromMap)window.bookingMap.setView([lat,lng],Math.max(window.bookingMap.getZoom(),16),{animate:true});
  setTimeout(()=>window.bookingMap.invalidateSize(),150);
 }
@@ -46,13 +50,13 @@ function toggleLocationMap(){
  if(w.classList.contains("open")){ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 }
 function useMyLocation(){
- const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();
+ const w=$("locationMapWrap");w.classList.add("open");openLocationModal();const mm=$("locationMapModal");if(mm)mm.classList.add("open");ensureBookingMap();
  setTimeout(()=>window.bookingMap.invalidateSize(),100);
- if(!navigator.geolocation)return setLocationStatus("Location is not supported. Please tap the map and drop your pin.",true);
- setLocationStatus("📍 Getting your exact GPS location…");
+ if(!navigator.geolocation){setModalStatus("GPS is not supported on this browser. Select your exact location on the map.",true);return;}
+ setLocationStatus("📍 Getting your exact GPS location…");setModalStatus("📍 Browser is asking for location permission…");
  const options={enableHighAccuracy:true,timeout:20000,maximumAge:0};
  navigator.geolocation.getCurrentPosition(
-   p=>{const{latitude:lat,longitude:lng,accuracy}=p.coords;window.bookingMap.setView([lat,lng],18,{animate:true});setCustomerPin(lat,lng,accuracy,false);},
+   p=>{const{latitude:lat,longitude:lng,accuracy}=p.coords;window.bookingMap.setView([lat,lng],18,{animate:true});setCustomerPin(lat,lng,accuracy,false);setModalStatus("✓ GPS location found. Pin placed and fare calculated.");},
    err=>{
      console.warn("Geolocation error",err);
      const message=err.code===1?"Location permission was denied. Allow location permission in browser settings, then try again.":err.code===2?"Your exact location could not be determined. Turn on GPS/location services and try again.":"Location request timed out. Turn on GPS and try again.";
@@ -61,7 +65,7 @@ function useMyLocation(){
    },options
  );
 }
-function openBookingLocation(){const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
+function openBookingLocation(){openLocationModal();const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 function createBooking(){
  const name=$("bname").value.trim(),phone=$("bphone").value.trim(),vehicle=$("bvehicle").value,model=$("bmodel").value.trim(),wash=$("bwash").value,date=$("bdate").value,time=$("btime").value,address=$("baddress").value.trim(),addon=Number($("baddon").value||0),lat=Number($("bLat").value),lng=Number($("bLng").value),distanceKm=Number($("bDistance").value||0),locationCharge=Number($("bLocationCharge").value||0);
  if(!name||!phone||!vehicle||!wash||!date||!time||!address)return alert("Please complete all required details and select your service location.");
