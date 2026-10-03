@@ -1,11 +1,11 @@
 -- Daivik Doorstep Car Care — Supabase schema
 -- Run this entire file once in Supabase SQL Editor.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.bookings (
   id text primary key,
-  booking_token uuid not null default gen_random_uuid(),
+  booking_token uuid not null default extensions.gen_random_uuid(),
   name text not null,
   phone text not null check (phone ~ '^[0-9]{10}$'),
   vehicle text not null check (vehicle in ('hatchback','sedan','compact-suv','mid-suv','full-suv','luxury-suv')),
@@ -125,7 +125,7 @@ begin
   end;
 
   v_total := v_base_price + p_addon + v_location_charge;
-  v_id := 'DVK-' || upper(substr(md5(gen_random_uuid()::text),1,8));
+  v_id := 'DVK-' || upper(substr(md5(extensions.gen_random_uuid()::text),1,8));
 
   insert into public.bookings (
     id,name,phone,vehicle,model,wash,date,time,address,lat,lng,
