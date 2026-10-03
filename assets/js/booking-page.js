@@ -50,20 +50,39 @@ function toggleLocationMap(){
  if(w.classList.contains("open")){ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 }
 function useMyLocation(){
- const w=$("locationMapWrap");w.classList.add("open");openLocationModal();const mm=$("locationMapModal");if(mm)mm.classList.add("open");ensureBookingMap();
- setTimeout(()=>window.bookingMap.invalidateSize(),100);
- if(!navigator.geolocation){setModalStatus("GPS is not supported on this browser. Select your exact location on the map.",true);return;}
- setLocationStatus("📍 Getting your exact GPS location…");setModalStatus("📍 Browser is asking for location permission…");
- const options={enableHighAccuracy:true,timeout:20000,maximumAge:0};
- navigator.geolocation.getCurrentPosition(
-   p=>{const{latitude:lat,longitude:lng,accuracy}=p.coords;window.bookingMap.setView([lat,lng],18,{animate:true});setCustomerPin(lat,lng,accuracy,false);setModalStatus("✓ GPS location found. Pin placed and fare calculated.");},
-   err=>{
-     console.warn("Geolocation error",err);
-     const message=err.code===1?"Location permission was denied. Allow location permission in browser settings, then try again.":err.code===2?"Your exact location could not be determined. Turn on GPS/location services and try again.":"Location request timed out. Turn on GPS and try again.";
-     setLocationStatus(message,true);
-     alert(message);
-   },options
- );
+  // Always open the map FIRST. GPS permission must never block the map UI.
+  openLocationModal();
+  const mapWrap=$("locationMapModal");
+  if(mapWrap)mapWrap.classList.add("open");
+  if(typeof L==="undefined"){
+    setModalStatus("Map library could not load. Please refresh and try again.",true);
+    return;
+  }
+  ensureBookingMap();
+  setTimeout(()=>{if(window.bookingMap)window.bookingMap.invalidateSize()},200);
+  setModalStatus("🗺️ Map opened. Getting your GPS location… You can also tap the map to place your exact pin.");
+  if(!navigator.geolocation){
+    setModalStatus("🗺️ Map is ready. GPS is not supported here — tap the exact location on the map.",true);
+    return;
+  }
+  const options={enableHighAccuracy:true,timeout:15000,maximumAge:0};
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      const{latitude:lat,longitude:lng,accuracy}=p.coords;
+      if(window.bookingMap){
+        window.bookingMap.setView([lat,lng],18,{animate:true});
+        setCustomerPin(lat,lng,accuracy,false);
+      }
+      setModalStatus("✓ GPS location found. Exact pin placed. You can drag it if needed.");
+    },
+    err=>{
+      console.warn("Geolocation error",err);
+      const message=err.code===1?"GPS permission was denied. The map is still open — tap your exact location on the map.":err.code===2?"GPS location is unavailable. Turn on Location/GPS or tap your exact location on the map.":"GPS request timed out. The map is still open — tap your exact location on the map.";
+      setModalStatus(message,true);
+      setLocationStatus(message,true);
+    },
+    options
+  );
 }
 function openBookingLocation(){openLocationModal();const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 function createBooking(){
