@@ -49,40 +49,39 @@ function toggleLocationMap(){
  const w=$("locationMapWrap");w.classList.toggle("open");
  if(w.classList.contains("open")){ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 }
-function useMyLocation(){
-  // Always open the map FIRST. GPS permission must never block the map UI.
+function openMapsForLocation(){
   openLocationModal();
   const mapWrap=$("locationMapModal");
   if(mapWrap)mapWrap.classList.add("open");
-  if(typeof L==="undefined"){
-    setModalStatus("Map library could not load. Please refresh and try again.",true);
-    return;
-  }
-  ensureBookingMap();
-  setTimeout(()=>{if(window.bookingMap)window.bookingMap.invalidateSize()},200);
-  setModalStatus("🗺️ Map opened. Getting your GPS location… You can also tap the map to place your exact pin.");
+  setModalStatus("📍 Google Maps खोल रहा हूँ. वहाँ अपनी current location confirm करें, फिर Back दबाकर Daivik पर लौटें. लौटते ही fare calculate होगा.");
+  sessionStorage.setItem("daivikLocationPending","1");
+  sessionStorage.setItem("daivikLocationStartedAt",String(Date.now()));
+  const mapsIntent="google.navigation:q=My+Location";
+  const mapsWeb="https://www.google.com/maps/search/?api=1&query=My%20Location";
+  try{
+    const a=document.createElement("a");a.href=mapsIntent;a.style.display="none";document.body.appendChild(a);a.click();a.remove();
+  }catch(err){console.warn("Maps app launch failed",err)}
+  setTimeout(()=>{if(document.visibilityState==="visible")window.location.href=mapsWeb},1200);
+}
+function useMyLocation(){openMapsForLocation()}
+function resumeLocationAfterMaps(){
+  if(sessionStorage.getItem("daivikLocationPending")!=="1")return;
   if(!navigator.geolocation){
-    setModalStatus("🗺️ Map is ready. GPS is not supported here — tap the exact location on the map.",true);
-    return;
+    setModalStatus("GPS उपलब्ध नहीं है. Website map पर exact pin select करें.",true);return;
   }
-  const options={enableHighAccuracy:true,timeout:15000,maximumAge:0};
-  navigator.geolocation.getCurrentPosition(
-    p=>{
-      const{latitude:lat,longitude:lng,accuracy}=p.coords;
-      if(window.bookingMap){
-        window.bookingMap.setView([lat,lng],18,{animate:true});
-        setCustomerPin(lat,lng,accuracy,false);
-      }
-      setModalStatus("✓ GPS location found. Exact pin placed. You can drag it if needed.");
-    },
-    err=>{
-      console.warn("Geolocation error",err);
-      const message=err.code===1?"GPS permission was denied. The map is still open — tap your exact location on the map.":err.code===2?"GPS location is unavailable. Turn on Location/GPS or tap your exact location on the map.":"GPS request timed out. The map is still open — tap your exact location on the map.";
-      setModalStatus(message,true);
-      setLocationStatus(message,true);
-    },
-    options
-  );
+  setModalStatus("✓ वापस आ गए. Phone GPS से exact location और fare calculate हो रहा है…");
+  navigator.geolocation.getCurrentPosition(p=>{
+    const{latitude:lat,longitude:lng,accuracy}=p.coords;
+    ensureBookingMap();
+    if(window.bookingMap)window.bookingMap.setView([lat,lng],18,{animate:true});
+    setCustomerPin(lat,lng,accuracy,false);
+    sessionStorage.removeItem("daivikLocationPending");
+    sessionStorage.removeItem("daivikLocationStartedAt");
+    setModalStatus("✓ Exact location received. Distance और doorstep fare calculate हो गया.");
+  },err=>{
+    const msg=err.code===1?"Location permission denied. Browser में Location Allow करें और फिर button दबाएँ.":"Phone GPS नहीं मिला. Location/GPS ON करके फिर button दबाएँ.";
+    setModalStatus(msg,true);setLocationStatus(msg,true);
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 function openBookingLocation(){openLocationModal();const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 function createBooking(){
