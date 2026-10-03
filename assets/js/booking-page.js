@@ -57,60 +57,79 @@ function useMyLocation(){
   setTimeout(()=>window.bookingMap.invalidateSize(),180);
 
   if(!navigator.geolocation){
-    setModalStatus("GPS is not supported. Use the map pin instead.",true);
+    setModalStatus("GPS is not supported by this browser. Please select your location on the website map.",true);
     return;
   }
 
-  sessionStorage.setItem("daivikMapsPending","1");
-  sessionStorage.setItem("daivikMapsStartedAt",String(Date.now()));
-  setModalStatus("📍 Opening Google Maps. Check/select your address there, then press Back to return to Daivik. We will calculate the fare automatically.");
-
-  const isAndroid=/Android/i.test(navigator.userAgent);
-  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-  let url;
-  if(isAndroid){
-    url="intent://maps.google.com/?q=My%20Location#Intent;scheme=https;package=com.google.android.apps.maps;end";
-  }else if(isIOS){
-    url="comgooglemaps://?q=Current%20Location";
-  }else{
-    url="https://www.google.com/maps/search/?api=1&query=My%20Location";
-  }
-  try{window.location.href=url}catch(e){console.warn("Maps launch failed",e)}
-  setTimeout(()=>{
-    if(document.visibilityState==="visible"&&!document.hidden){
-      window.location.href="https://www.google.com/maps/search/?api=1&query=My%20Location";
-    }
-  },1200);
-}
-
-function resumeAfterMaps(){
-  if(sessionStorage.getItem("daivikMapsPending")!=="1")return;
-  const started=Number(sessionStorage.getItem("daivikMapsStartedAt")||0);
-  if(started&&Date.now()-started<1000)return;
-  if(!navigator.geolocation){
-    setModalStatus("GPS unavailable. Please use the website map.",true);
-    return;
-  }
-  setModalStatus("✓ Back on Daivik. Reading your phone location and calculating the doorstep fare…");
+  setModalStatus("📍 Getting your exact phone location first…");
   navigator.geolocation.getCurrentPosition(
     p=>{
       const{latitude:lat,longitude:lng,accuracy}=p.coords;
-      ensureBookingMap();
+      sessionStorage.setItem("daivikMapsPending","1");
+      sessionStorage.setItem("daivikMapsLat",String(lat));
+      sessionStorage.setItem("daivikMapsLng",String(lng));
+      sessionStorage.setItem("daivikMapsAccuracy",String(accuracy||0));
+      sessionStorage.setItem("daivikMapsStartedAt",String(Date.now()));
+
       if(window.bookingMap)window.bookingMap.setView([lat,lng],18,{animate:true});
-      setCustomerPin(lat,lng,accuracy,false);
-      sessionStorage.removeItem("daivikMapsPending");
-      sessionStorage.removeItem("daivikMapsStartedAt");
-      setModalStatus("✓ Location received. Distance and doorstep fare calculated.");
+      setModalStatus("📍 Location found. Opening Google Maps so you can check the address. Press Back to return to Daivik.");
+
+      const mapsUrl="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);
+      const isAndroid=/Android/i.test(navigator.userAgent);
+      const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      try{
+        if(isAndroid){
+          window.location.href="intent://maps.google.com/?q="+encodeURIComponent(lat+","+lng)+"#Intent;scheme=https;package=com.google.android.apps.maps;end";
+        }else if(isIOS){
+          window.location.href="comgooglemaps://?q="+encodeURIComponent(lat+","+lng);
+        }else{
+          window.location.href=mapsUrl;
+        }
+      }catch(e){
+        window.location.href=mapsUrl;
+      }
+
+      setTimeout(()=>{
+        if(document.visibilityState==="visible"&&!document.hidden)window.location.href=mapsUrl;
+      },1400);
     },
     err=>{
+      console.warn("GPS location failed",err);
       const msg=err.code===1
-        ?"Location permission is blocked. Allow Location for this browser, then try again."
+        ?"Location permission was denied. Allow Location for this browser, then tap Use My Location again."
         :"Phone GPS could not be read. Turn on Location/GPS and try again.";
       setModalStatus(msg,true);
       setLocationStatus(msg,true);
     },
     {enableHighAccuracy:true,timeout:20000,maximumAge:0}
   );
+}
+
+function resumeAfterMaps(){
+  if(sessionStorage.getItem("daivikMapsPending")!=="1")return;
+  const started=Number(sessionStorage.getItem("daivikMapsStartedAt")||0);
+  if(started&&Date.now()-started<1000)return;
+
+  const lat=Number(sessionStorage.getItem("daivikMapsLat"));
+  const lng=Number(sessionStorage.getItem("daivikMapsLng"));
+  const accuracy=Number(sessionStorage.getItem("daivikMapsAccuracy")||0);
+
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)){
+    setModalStatus("Location could not be restored. Please use Use My Location again.",true);
+    return;
+  }
+
+  setModalStatus("✓ Back on Daivik. Calculating your doorstep fare…");
+  ensureBookingMap();
+  if(window.bookingMap)window.bookingMap.setView([lat,lng],18,{animate:true});
+  setCustomerPin(lat,lng,accuracy,false);
+
+  sessionStorage.removeItem("daivikMapsPending");
+  sessionStorage.removeItem("daivikMapsLat");
+  sessionStorage.removeItem("daivikMapsLng");
+  sessionStorage.removeItem("daivikMapsAccuracy");
+  sessionStorage.removeItem("daivikMapsStartedAt");
 }
 
 function openBookingLocation(){openLocationModal();const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
