@@ -29,21 +29,26 @@
   }
 
   window.createBooking = async function () {
+    const button=$("confirmBookingBtn"), errorBox=$("bookingError");
+    if(button){button.disabled=true;button.textContent="Saving booking…";}
+    if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
     const name=$("bname").value.trim(), phone=$("bphone").value.trim(), vehicle=$("bvehicle").value,
       model=$("bmodel").value.trim(), wash=$("bwash").value, date=$("bdate").value, time=$("btime").value,
       address=$("baddress").value.trim(), addon=Number($("baddon").value||0),
       lat=Number($("bLat").value), lng=Number($("bLng").value);
 
-    if(!name||!phone||!vehicle||!wash||!date||!time||!address) return alert("Please complete all required details.");
-    if(!/^[0-9]{10}$/.test(phone)) return alert("Please enter a valid 10-digit mobile number.");
-    if(!Number.isFinite(lat)||!Number.isFinite(lng)) return alert("Please select your service location using the map or Use My Location.");
-    if(new Date(date + "T23:59:59") < new Date()) return alert("Please select a future service date.");
+    if(!name||!phone||!vehicle||!wash||!date||!time||!address){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please complete all required details.");}
+    if(!/^[0-9]{10}$/.test(phone)){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please enter a valid 10-digit mobile number.");}
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please select your service location using the map or Use My Location.");}
+    if(new Date(date + "T23:59:59") < new Date()){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please select a future service date.");}
 
     const {data,error}=await client.rpc("create_booking",{
       p_name:name,p_phone:phone,p_vehicle:vehicle,p_model:model,p_wash:wash,p_date:date,p_time:time,
       p_address:address,p_lat:lat,p_lng:lng,p_addon:addon,p_scheduled_at:selectedSlotISO(date,time)
     });
-    if(error){ console.error(error); alert("Booking could not be saved. Please try again or use WhatsApp."); return; }
+    if(error){ console.error(error); const msg=(error.message||"Booking could not be saved."); if(errorBox){errorBox.textContent=msg+" If this is the first setup, run supabase/schema.sql in Supabase SQL Editor.";errorBox.classList.add("show");} else alert(msg); return; }
+
+    if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
 
     showSaved(data);
   };
