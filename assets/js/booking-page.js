@@ -63,26 +63,84 @@ function openMapsForLocation(){
   }catch(err){console.warn("Maps app launch failed",err)}
   setTimeout(()=>{if(document.visibilityState==="visible")window.location.href=mapsWeb},1200);
 }
-function useMyLocation(){openMapsForLocation()}
+function openMapsForLocation(){
+  openLocationModal();
+  const mapWrap=$("locationMapModal");
+  if(mapWrap)mapWrap.classList.add("open");
+
+  if(!navigator.geolocation){
+    setModalStatus("GPS is not supported by this browser. Use the website map to place the exact pin.",true);
+    return;
+  }
+
+  sessionStorage.setItem("daivikLocationPending","1");
+  sessionStorage.setItem("daivikLocationStartedAt",String(Date.now()));
+  setModalStatus("📍 Google Maps is opening. Confirm/check your location there, then press Back to return to Daivik. Your fare will calculate automatically.");
+
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  let appUrl=null;
+
+  if(isAndroid){
+    appUrl="intent://maps.google.com/?q=My%20Location#Intent;scheme=https;package=com.google.android.apps.maps;end";
+  }else if(isIOS){
+    appUrl="comgooglemaps://?q=Current%20Location";
+  }else{
+    appUrl="https://www.google.com/maps/search/?api=1&query=My%20Location";
+  }
+
+  try{
+    window.location.href=appUrl;
+  }catch(err){
+    console.warn("Google Maps launch failed",err);
+  }
+
+  // Fallback only if the browser stayed visible (meaning the Maps app did not open).
+  setTimeout(()=>{
+    if(document.visibilityState==="visible" && !document.hidden){
+      window.location.href="https://www.google.com/maps/search/?api=1&query=My%20Location";
+    }
+  },1600);
+}
+
+function useMyLocation(){
+  openMapsForLocation();
+}
+
 function resumeLocationAfterMaps(){
   if(sessionStorage.getItem("daivikLocationPending")!=="1")return;
+  const started=Number(sessionStorage.getItem("daivikLocationStartedAt")||0);
+  if(started && Date.now()-started<1000)return;
+
   if(!navigator.geolocation){
-    setModalStatus("GPS उपलब्ध नहीं है. Website map पर exact pin select करें.",true);return;
+    setModalStatus("GPS is not available. Please use the website map.",true);
+    return;
   }
-  setModalStatus("✓ वापस आ गए. Phone GPS से exact location और fare calculate हो रहा है…");
-  navigator.geolocation.getCurrentPosition(p=>{
-    const{latitude:lat,longitude:lng,accuracy}=p.coords;
-    ensureBookingMap();
-    if(window.bookingMap)window.bookingMap.setView([lat,lng],18,{animate:true});
-    setCustomerPin(lat,lng,accuracy,false);
-    sessionStorage.removeItem("daivikLocationPending");
-    sessionStorage.removeItem("daivikLocationStartedAt");
-    setModalStatus("✓ Exact location received. Distance और doorstep fare calculate हो गया.");
-  },err=>{
-    const msg=err.code===1?"Location permission denied. Browser में Location Allow करें और फिर button दबाएँ.":"Phone GPS नहीं मिला. Location/GPS ON करके फिर button दबाएँ.";
-    setModalStatus(msg,true);setLocationStatus(msg,true);
-  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+
+  setModalStatus("✓ Back on Daivik. Reading your phone GPS and calculating the doorstep fare…");
+
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      const{latitude:lat,longitude:lng,accuracy}=p.coords;
+      ensureBookingMap();
+      if(window.bookingMap)window.bookingMap.setView([lat,lng],18,{animate:true});
+      setCustomerPin(lat,lng,accuracy,false);
+      sessionStorage.removeItem("daivikLocationPending");
+      sessionStorage.removeItem("daivikLocationStartedAt");
+      setModalStatus("✓ Exact location received. Distance and doorstep fare calculated.");
+    },
+    err=>{
+      console.warn("GPS after Maps return failed",err);
+      const msg=err.code===1
+        ?"Location permission is blocked. Allow Location for this browser, then tap the button again."
+        :"Phone GPS could not be read. Turn on Location/GPS and tap the button again.";
+      setModalStatus(msg,true);
+      setLocationStatus(msg,true);
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
 }
+
 function openBookingLocation(){openLocationModal();const w=$("locationMapWrap");w.classList.add("open");ensureBookingMap();setTimeout(()=>window.bookingMap.invalidateSize(),150)}
 function createBooking(){
  const name=$("bname").value.trim(),phone=$("bphone").value.trim(),vehicle=$("bvehicle").value,model=$("bmodel").value.trim(),wash=$("bwash").value,date=$("bdate").value,time=$("btime").value,address=$("baddress").value.trim(),addon=Number($("baddon").value||0),lat=Number($("bLat").value),lng=Number($("bLng").value),distanceKm=Number($("bDistance").value||0),locationCharge=Number($("bLocationCharge").value||0);
@@ -94,4 +152,14 @@ function createBooking(){
 }
 function showBooking(d){$("bookingId").textContent=d.id;$("sumService").textContent=P[d.vehicle].n+" — "+d.wash.charAt(0).toUpperCase()+d.wash.slice(1)+" Wash";$("sumCar").textContent=d.model||"Car model not specified";$("sumPrice").textContent="₹"+d.total.toLocaleString("en-IN");$("sumName").textContent=d.name;$("sumSlot").textContent=d.date+" • "+d.time;$("sumAddress").textContent=d.address+" • "+Number(d.distanceKm||0).toFixed(1)+" km from base";$("bookingSummary").classList.add("show");$("bookingSummary").scrollIntoView({behavior:"smooth",block:"center"})}
 function sendSavedBooking(){const d=JSON.parse(localStorage.getItem("daivikBooking")||"null");if(!d)return alert("No booking found.");const msg="🚗 DAIVIK DOORSTEP CAR CARE — BOOKING REQUEST\\n\\n🆔 "+d.id+"\\n👤 "+d.name+"\\n📱 "+d.phone+"\\n🚘 "+(d.model||"Not specified")+"\\n🧽 "+d.wash+" Wash\\n💰 Total: ₹"+d.total.toLocaleString("en-IN")+"\\n📅 "+d.date+" • "+d.time+"\\n📍 "+d.address+"\\n📏 "+Number(d.distanceKm||0).toFixed(1)+" km | Location charge: ₹"+Number(d.locationCharge||0)+"\\n🗺️ https://www.google.com/maps?q="+d.lat+","+d.lng;window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(msg),"_blank")}
-document.addEventListener("DOMContentLoaded",()=>{const q=new URLSearchParams(location.search);const w=q.get("wash"),p=q.get("plan");if(w&&P[Object.keys(P)[0]])$("bwash").value=w;if(p)$("bookingType").textContent=p.charAt(0).toUpperCase()+p.slice(1)+" Monthly Plan";setTimeout(resumeLocationAfterMaps,250)});\nwindow.addEventListener("pageshow",()=>setTimeout(resumeLocationAfterMaps,300));\ndocument.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")setTimeout(resumeLocationAfterMaps,350)});
+document.addEventListener("DOMContentLoaded",()=>{
+  const q=new URLSearchParams(location.search);
+  const w=q.get("wash"),p=q.get("plan");
+  if(w&&P[Object.keys(P)[0]])$("bwash").value=w;
+  if(p)$("bookingType").textContent=p.charAt(0).toUpperCase()+p.slice(1)+" Monthly Plan";
+  setTimeout(resumeLocationAfterMaps,500);
+});
+window.addEventListener("pageshow",()=>setTimeout(resumeLocationAfterMaps,500));
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible")setTimeout(resumeLocationAfterMaps,700);
+});
