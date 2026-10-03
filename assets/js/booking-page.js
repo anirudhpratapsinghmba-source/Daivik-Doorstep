@@ -29,15 +29,15 @@ function ensureBookingMap(){
  window.bookingMap=L.map(mapEl,{zoomControl:true,scrollWheelZoom:true}).setView([DAIVIK_BASE.lat,DAIVIK_BASE.lng],13);
  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(window.bookingMap);
  window.baseMarker=L.marker([DAIVIK_BASE.lat,DAIVIK_BASE.lng]).addTo(window.bookingMap).bindPopup("Daivik Service Base");
- window.customerMarker=null;window.customerAccuracyCircle=null;
+ window.customerMarker=null;window.customerAccuracyCircle=null;window.locationRouteLine=null;
  window.bookingMap.on("click",async e=>{
    setCustomerPin(e.latlng.lat,e.latlng.lng,null,true);
  });
 }
 function setCustomerPin(lat,lng,accuracy=null,fromMap=false){
  if(window.customerMarker)window.bookingMap.removeLayer(window.customerMarker);
- if(window.customerAccuracyCircle)window.bookingMap.removeLayer(window.customerAccuracyCircle);
- window.customerMarker=L.marker([lat,lng],{draggable:true}).addTo(window.bookingMap).bindPopup("Your service location").openPopup();
+ if(window.customerAccuracyCircle)window.bookingMap.removeLayer(window.customerAccuracyCircle);\n if(window.locationRouteLine)window.bookingMap.removeLayer(window.locationRouteLine);
+ window.customerMarker=L.marker([lat,lng],{draggable:true}).addTo(window.bookingMap).bindPopup("Customer Service Location").openPopup();\n window.locationRouteLine=L.polyline([[DAIVIK_BASE.lat,DAIVIK_BASE.lng],[lat,lng]],{weight:4,dashArray:"8 8"}).addTo(window.bookingMap);\n const bounds=L.latLngBounds([[DAIVIK_BASE.lat,DAIVIK_BASE.lng],[lat,lng]]);\n window.bookingMap.fitBounds(bounds,{padding:[40,40],maxZoom:16});
  if(Number.isFinite(accuracy)&&accuracy>0)window.customerAccuracyCircle=L.circle([lat,lng],{radius:accuracy,weight:1,fillOpacity:.08}).addTo(window.bookingMap);
  window.customerMarker.on("dragend",async e=>{const p=e.target.getLatLng();setCustomerPin(p.lat,p.lng,null,true)});
  setLocationStatus("📍 Pin placed. Getting address…");setModalStatus("📍 Pin placed. Getting exact address…");
