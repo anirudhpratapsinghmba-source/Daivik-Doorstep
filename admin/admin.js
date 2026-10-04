@@ -26,7 +26,7 @@ client.auth.onAuthStateChange((_event,session)=>{
 async function loadBookings(){
   const {data,error}=await client.from("bookings").select("*").order("created_at",{ascending:false}).limit(200);
   if(error){$("loginMessage").textContent=error.message;return;}
-  allBookings=data||[];updateStats();renderBookings();
+  allBookings=data||[];updateStats();renderAnalytics();renderBookings();
 }
 async function loadPaymentSettings(){
   const {data,error}=await client.from("payment_settings").select("*").eq("id",1).maybeSingle();
@@ -56,6 +56,7 @@ function renderQrPreview(){
 $("upiId").addEventListener("input",renderQrPreview);
 $("qrImageUrl").addEventListener("input",renderQrPreview);
 
+function renderAnalytics(){const now=new Date(),days=[];for(let i=6;i>=0;i--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push(d)}const paid=allBookings.filter(b=>b.payment_status==="Paid"),revenue=paid.reduce((s,b)=>s+Number(b.collected_amount||b.total||0),0),avg=allBookings.length?allBookings.reduce((s,b)=>s+Number(b.total||0),0)/allBookings.length:0,cancelled=allBookings.filter(b=>b.status==="Cancelled").length,open=allBookings.filter(b=>!["Completed","Cancelled"].includes(b.status)).length,rate=allBookings.length?Math.round(paid.length/allBookings.length*100):0,cancelRate=allBookings.length?Math.round(cancelled/allBookings.length*100):0;const values=days.map(d=>allBookings.filter(b=>{const x=new Date(b.created_at||b.date);return x.getFullYear()===d.getFullYear()&&x.getMonth()===d.getMonth()&&x.getDate()===d.getDate()}).reduce((s,b)=>s+Number(b.total||0),0)),max=Math.max(1,...values);$("revenueChart").innerHTML=values.map((v,i)=>"<div class=barCol><b>"+(v?"₹"+Math.round(v):"")+"</b><div class=bar style=height:"+Math.max(3,Math.round(v/max*125))+"px></div><small>"+days[i].toLocaleDateString("en-IN",{weekday:"short"}).slice(0,3)+"</small></div>").join("");$("analyticsRevenue").textContent=money(revenue);$("avgOrder").textContent=money(avg);$("collectionRate").textContent=rate+"%";$("cancelRate").textContent=cancelRate+"%";$("openBookings").textContent=open;$("analyticsInsight").textContent=cancelRate>15?"Cancellation rate is high — review slot confirmation and customer reminders.":open>10?"You have a sizeable open queue — prioritise pending confirmations and staff assignment.":paid.length?"Collections are active. Keep payment status updated after every doorstep job.":"New bookings will appear here automatically after the first customer booking."}
 function updateStats(){
   $("count").textContent=allBookings.length;
   $("pending").textContent=allBookings.filter(b=>b.status==="Pending Confirmation").length;
