@@ -196,8 +196,38 @@ function openBookingLocation(){
   ensureBookingMap();
   setTimeout(()=>window.bookingMap.invalidateSize(),150);
 }
+function populateBookingModels(selectedValue=""){
+  const select=$("bmodel"), customWrap=$("bmodelCustomWrap");
+  if(!select)return;
+  const groups=window.DAIVIK_CAR_MODELS?.[$("bvehicle")?.value]||{};
+  select.innerHTML='<option value="">Select car model</option>';
+  Object.entries(groups).forEach(([brand,models])=>{
+    const og=document.createElement("optgroup");og.label=brand;
+    models.forEach(model=>{
+      const opt=document.createElement("option");
+      opt.value=brand+" — "+model;opt.textContent=model;
+      og.appendChild(opt);
+    });
+    select.appendChild(og);
+  });
+  const custom=document.createElement("option");
+  custom.value="__custom__";custom.textContent="✎ Custom / Other — enter manually";
+  select.appendChild(custom);
+  if(selectedValue){
+    const options=[...select.options];
+    const exact=options.find(o=>o.value===selectedValue||o.textContent===selectedValue);
+    if(exact)select.value=exact.value;
+    else if(selectedValue!==""){
+      select.value="__custom__";
+      $("bmodelCustom").value=selectedValue;
+    }
+  }
+  if(customWrap)customWrap.hidden=select.value!=="__custom__";
+}
 function bindEstimateEvents(){
-  ["bvehicle","bwash","baddon"].forEach(id=>$(id)?.addEventListener("change",refreshBookingEstimate));
+  ["bwash","baddon"].forEach(id=>$(id)?.addEventListener("change",refreshBookingEstimate));
+  $("bvehicle")?.addEventListener("change",()=>{populateBookingModels();refreshBookingEstimate();});
+  $("bmodel")?.addEventListener("change",()=>{const w=$("bmodelCustomWrap");if(w)w.hidden=$("bmodel").value!=="__custom__";});
   refreshBookingEstimate();
 }
 document.addEventListener("DOMContentLoaded",()=>{
@@ -205,7 +235,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const w=q.get("wash"),p=q.get("plan"),vehicle=q.get("vehicle"),model=q.get("model");
   if(w&&["ultra_basic","basic","medium","premium"].includes(w))$("bwash").value=w;
   if(vehicle&&P[vehicle])$("bvehicle").value=vehicle;
-  if(model)$("bmodel").value=model;
+  populateBookingModels(model||"");
   if(p)$("bookingType").textContent=p.charAt(0).toUpperCase()+p.slice(1)+" Monthly Plan";
   const note=$("bookingOfferNote");
   if(note){note.textContent="🎁 DAIVIK10 online booking offer is active — 10% off the service price. Location charges, if any, are calculated separately.";note.style.display="block";}
