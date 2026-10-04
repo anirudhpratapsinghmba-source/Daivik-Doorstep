@@ -4,6 +4,7 @@ const EXTRA_RATE_PER_KM=8;
 const ONLINE_OFFER="DAIVIK10";
 const P=window.DAIVIK_PRICING||{};
 const $=id=>document.getElementById(id);
+let locationConfirmed=false;
 
 function haversineKm(a,b,c,d){
   const R=6371,rad=Math.PI/180;
@@ -51,6 +52,7 @@ function refreshBookingEstimate(){
 }
 function updateLocation(lat,lng,address="",accuracy=null){
   if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+  locationConfirmed=false;
   const distance=haversineKm(DAIVIK_BASE.lat,DAIVIK_BASE.lng,lat,lng);
   const charge=locationCharge(distance);
   $("bLat").value=lat.toFixed(7);
@@ -287,7 +289,7 @@ function setCustomerPin(lat,lng,accuracy=null){
     updateLocation(lat,lng,address,accuracy);
     setModalStatus("✓ Pin selected. Check the distance/charge below, adjust the pin if needed, then Confirm Location.");
   });
-  const b=$( "confirmLocationBtn");if(b)b.disabled=false;
+  const b=$("confirmLocationBtn");if(b)b.disabled=false;
 }
 function useMyLocation(){
   openLocationModal();
@@ -315,7 +317,10 @@ function confirmSelectedLocation(){
   setLocationStatus(distance<=FREE_RADIUS_KM?"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — FREE service charge":"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — "+money(charge)+" service charge");
   const link=$( "customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
   setModalStatus("✓ Location confirmed. You can now complete the booking.");
+  locationConfirmed=true;
   refreshBookingEstimate();
+  const submit=$("confirmBookingBtn");
+  if(submit){submit.scrollIntoView({behavior:"smooth",block:"center"});}
   setTimeout(closeLocationModal,300);
 }
 async function searchMapLocation(){
@@ -380,7 +385,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   const note=$("bookingOfferNote");
   if(note){note.textContent="🎁 DAIVIK10 online booking offer is active — 10% off the service price. Location charges, if any, are calculated separately.";note.style.display="block";}
   bindEstimateEvents();
-  setTimeout(resumeAfterMaps,600);
+  refreshBookingEstimate();
 });
-window.addEventListener("pageshow",()=>setTimeout(resumeAfterMaps,600));
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")setTimeout(resumeAfterMaps,800);});
+
