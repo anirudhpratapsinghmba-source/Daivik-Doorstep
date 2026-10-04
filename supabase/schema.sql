@@ -1,7 +1,10 @@
--- Daivik Doorstep Car Care — Supabase schema
--- Run this entire file once in Supabase SQL Editor.
+-- Daivik Doorstep Car Care — Supabase production schema
+-- Run this entire file in Supabase SQL Editor after each schema revision.
 
 create extension if not exists pgcrypto with schema extensions;
+
+drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,timestamptz);
+drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz);
 
 create table if not exists public.bookings (
   id text primary key,
@@ -10,7 +13,7 @@ create table if not exists public.bookings (
   phone text not null check (phone ~ '^[0-9]{10}$'),
   vehicle text not null check (vehicle in ('hatchback','sedan','compact-suv','mid-suv','full-suv','luxury-suv')),
   model text,
-  wash text not null check (wash in ('basic','medium','premium')),
+  wash text not null check (wash in ('ultra_basic','basic','medium','premium')),
   date date not null,
   time text not null,
   address text not null,
@@ -20,7 +23,12 @@ create table if not exists public.bookings (
   location_charge integer not null default 0,
   addon integer not null default 0 check (addon in (0,199,299,349,399,499)),
   base_price integer not null,
+  discount_amount integer not null default 0,
+  offer_code text,
   total integer not null,
+  payment_status text not null default 'Pending' check (payment_status in ('Pending','Paid','Failed','Refunded')),
+  payment_id text,
+  payment_order_id text,
   status text not null default 'Pending Confirmation' check (status in ('Pending Confirmation','Accepted','Cancelled','Completed')),
   accepted_date date,
   accepted_time text,
@@ -30,9 +38,19 @@ create table if not exists public.bookings (
   cancelled_at timestamptz
 );
 
+-- Upgrade existing installations safely when this file is re-run.
+alter table public.bookings drop constraint if exists bookings_wash_check;
+alter table public.bookings add constraint bookings_wash_check check (wash in ('ultra_basic','basic','medium','premium'));
+alter table public.bookings add column if not exists discount_amount integer not null default 0;
+alter table public.bookings add column if not exists offer_code text;
+alter table public.bookings add column if not exists payment_status text not null default 'Pending';
+alter table public.bookings add column if not exists payment_id text;
+alter table public.bookings add column if not exists payment_order_id text;
+
 create index if not exists bookings_created_at_idx on public.bookings(created_at desc);
 create index if not exists bookings_scheduled_at_idx on public.bookings(scheduled_at);
 create index if not exists bookings_phone_idx on public.bookings(phone);
+create index if not exists bookings_payment_status_idx on public.bookings(payment_status);
 
 alter table public.bookings enable row level security;
 
@@ -64,6 +82,7 @@ create or replace function public.create_booking(
   p_lat double precision,
   p_lng double precision,
   p_addon integer,
+  p_offer_code text,
   p_scheduled_at timestamptz
 )
 returns jsonb
@@ -76,30 +95,34 @@ declare
   v_distance numeric(8,3);
   v_location_charge integer;
   v_base_price integer;
+  v_discount integer;
   v_total integer;
   v_row public.bookings;
 begin
   if trim(coalesce(p_name,'')) = '' or p_phone !~ '^[0-9]{10}$' then
     raise exception 'Invalid customer details';
   end if;
-
   if p_vehicle not in ('hatchback','sedan','compact-suv','mid-suv','full-suv','luxury-suv') then
     raise exception 'Invalid vehicle category';
   end if;
-
-  if p_wash not in ('basic','medium','premium') then
+  if p_wash not in ('ultra_basic','basic','medium','premium') then
     raise exception 'Invalid wash type';
   end if;
-
+  if p_wash='ultra_basic' and p_vehicle not in ('hatchback','sedan') then
+    raise exception 'Ultra Basic is available for Hatchback and Sedan only';
+  end if;
   if p_addon not in (0,199,299,349,399,499) then
     raise exception 'Invalid add-on';
   end if;
-
   if trim(coalesce(p_address,'')) = '' then
     raise exception 'Service address is required';
   end if;
+  if p_lat is null or p_lng is null then
+    raise exception 'Exact service location is required';
+  end if;
 
-  -- Daivik base: 29.972586, 78.062215
+  -- Fixed Daivik service base: 29.972586, 78.062215.
+  -- Distance is the Haversine straight-line distance used consistently by site + backend.
   v_distance := round((
     6371 * 2 * asin(
       sqrt(
@@ -116,25 +139,32 @@ begin
   end;
 
   v_base_price := case p_vehicle
-    when 'hatchback' then case p_wash when 'basic' then 399 when 'medium' then 599 else 899 end
-    when 'sedan' then case p_wash when 'basic' then 499 when 'medium' then 699 else 999 end
+    when 'hatchback' then case p_wash when 'ultra_basic' then 299 when 'basic' then 399 when 'medium' then 599 else 899 end
+    when 'sedan' then case p_wash when 'ultra_basic' then 299 when 'basic' then 399 when 'medium' then 599 else 899 end
     when 'compact-suv' then case p_wash when 'basic' then 599 when 'medium' then 799 else 1099 end
     when 'mid-suv' then case p_wash when 'basic' then 699 when 'medium' then 899 else 1199 end
     when 'full-suv' then case p_wash when 'basic' then 799 when 'medium' then 999 else 1299 end
     when 'luxury-suv' then case p_wash when 'basic' then 999 when 'medium' then 1199 else 1499 end
   end;
 
-  v_total := v_base_price + p_addon + v_location_charge;
+  v_discount := case
+    when upper(trim(coalesce(p_offer_code,''))) = 'DAIVIK10' then round(v_base_price * 0.10)
+    else 0
+  end;
+
+  v_total := greatest(0,v_base_price - v_discount) + p_addon + v_location_charge;
   v_id := 'DVK-' || upper(substr(md5(extensions.gen_random_uuid()::text),1,8));
 
   insert into public.bookings (
     id,name,phone,vehicle,model,wash,date,time,address,lat,lng,
-    distance_km,location_charge,addon,base_price,total,status,scheduled_at
+    distance_km,location_charge,addon,base_price,discount_amount,offer_code,total,
+    payment_status,status,scheduled_at
   )
   values (
     v_id,trim(p_name),p_phone,p_vehicle,nullif(trim(coalesce(p_model,'')),''),p_wash,
     p_date,p_time,trim(p_address),p_lat,p_lng,v_distance,v_location_charge,p_addon,
-    v_base_price,v_total,'Pending Confirmation',p_scheduled_at
+    v_base_price,v_discount,nullif(trim(coalesce(p_offer_code,'')),''),v_total,
+    'Pending','Pending Confirmation',p_scheduled_at
   )
   returning * into v_row;
 
@@ -154,19 +184,23 @@ begin
     'distanceKm',v_row.distance_km,
     'locationCharge',v_row.location_charge,
     'addon',v_row.addon,
+    'basePrice',v_row.base_price,
+    'discountAmount',v_row.discount_amount,
+    'offerCode',v_row.offer_code,
     'total',v_row.total,
+    'paymentStatus',v_row.payment_status,
     'status',v_row.status
   );
 end;
 $$;
 
 create or replace function public.track_booking(p_booking_id text)
-returns table(status text, accepted_date date, accepted_time text)
+returns table(status text, accepted_date date, accepted_time text, payment_status text, total integer)
 language sql
 security definer
 set search_path = ''
 as $$
-  select b.status, b.accepted_date, b.accepted_time
+  select b.status, b.accepted_date, b.accepted_time, b.payment_status, b.total
   from public.bookings b
   where upper(b.id) = upper(trim(p_booking_id))
   limit 1;
@@ -185,7 +219,6 @@ begin
     and booking_token=p_booking_token
     and status in ('Pending Confirmation','Accepted')
     and scheduled_at > now() + interval '2 hours';
-
   return found;
 end;
 $$;
@@ -193,8 +226,8 @@ $$;
 revoke all on table public.bookings from anon, authenticated;
 grant select, update, delete on public.bookings to authenticated;
 
-revoke all on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,timestamptz) from public;
-grant execute on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,timestamptz) to anon, authenticated;
+revoke all on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) from public;
+grant execute on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) to anon, authenticated;
 
 revoke all on function public.track_booking(text) from public;
 grant execute on function public.track_booking(text) to anon, authenticated;
