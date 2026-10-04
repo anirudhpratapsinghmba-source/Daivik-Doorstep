@@ -310,7 +310,7 @@ function setCustomerPin(lat,lng,accuracy=null){
   reverseGeocode(lat,lng).then(address=>{
     if(address)$( "baddress").value=address;
     updateLocation(lat,lng,address,accuracy);
-    setModalStatus("✓ Pin selected. Check the distance/charge below, adjust the pin if needed, then Confirm Location.");
+    setModalStatus("✓ Pin selected. Adjust it if needed, then Confirm Location.");
   });
   const b=$("confirmLocationBtn");if(b)b.disabled=false;
 }
@@ -362,7 +362,7 @@ function confirmSelectedLocation(){
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){setModalStatus("First place your pin on the map.",true);return;}
   const distance=Number($( "bDistance").value||0),charge=Number($( "bLocationCharge").value||0);
   if(!$( "baddress").value.trim())$( "baddress").value="Pinned map location ("+lat.toFixed(6)+", "+lng.toFixed(6)+")";
-  setLocationStatus(distance<=FREE_RADIUS_KM?"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — FREE service charge":"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — "+money(charge)+" service charge");
+  setLocationStatus("✓ Service location confirmed. You can now complete the booking.");
   const link=$( "customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
   setModalStatus("✓ Location confirmed. You can now complete the booking.");
   locationConfirmed=true;
@@ -389,6 +389,42 @@ async function searchMapLocation(){
     setModalStatus("Search is temporarily unavailable. Tap the map manually to select your location.",true);
   }
 }
+function setModelPicker(value){
+  const select=$("bmodel"),btn=$("modelPickerBtn"),customWrap=$("bmodelCustomWrap");
+  if(!select)return;
+  select.value=value;
+  const opt=select.options[select.selectedIndex];
+  const label=value==="__custom__"?"Custom / Other":(opt?.textContent||"Select car model");
+  if(btn){btn.innerHTML=label+" <span>⌄</span>";btn.classList.toggle("active",value==="__custom__");btn.setAttribute("aria-expanded","false");}
+  if(customWrap)customWrap.hidden=value!=="__custom__";
+}
+function renderModelOptions(){
+  const select=$("bmodel"), list=$("modelOptions");
+  if(!select||!list)return;
+  const search=($("modelSearch")?.value||"").trim().toLowerCase();
+  list.innerHTML="";
+  let visible=0;
+  [...select.options].forEach(opt=>{
+    if(!opt.value)return;
+    if(opt.tagName==="OPTGROUP")return;
+    if(opt.parentElement?.tagName==="OPTGROUP"){
+      const brand=opt.parentElement.label.toLowerCase();
+      if(search && !brand.includes(search) && !opt.textContent.toLowerCase().includes(search))return;
+      if(visible===0 || list.lastElementChild?.dataset?.brand!==opt.parentElement.label){
+        const h=document.createElement("div");h.className="modelGroup";h.textContent=opt.parentElement.label;h.dataset.brand=opt.parentElement.label;list.appendChild(h);
+      }
+      const b=document.createElement("button");b.type="button";b.className="modelOption";b.textContent=opt.textContent;
+      b.addEventListener("click",()=>{setModelPicker(opt.value);$("modelPickerPanel").hidden=true;renderModelOptions();});
+      list.appendChild(b);visible++;
+    }else if(opt.value==="__custom__"){
+      if(search && !("custom other".includes(search)))return;
+      const b=document.createElement("button");b.type="button";b.className="modelOption custom";b.textContent="✎ Custom / Other — enter manually";
+      b.addEventListener("click",()=>{setModelPicker("__custom__");$("modelPickerPanel").hidden=false;$("bmodelCustom")?.focus();});
+      list.appendChild(b);visible++;
+    }
+  });
+  if(!visible){const e=document.createElement("div");e.className="modelEmpty";e.textContent="No model found. Choose Custom / Other.";list.appendChild(e);}
+}
 function populateBookingModels(selectedValue=""){
   const select=$("bmodel"), customWrap=$("bmodelCustomWrap");
   if(!select)return;
@@ -404,18 +440,16 @@ function populateBookingModels(selectedValue=""){
     select.appendChild(og);
   });
   const custom=document.createElement("option");
-  custom.value="__custom__";custom.textContent="✎ Custom / Other — enter manually";
+  custom.value="__custom__";custom.textContent="Custom / Other";
   select.appendChild(custom);
   if(selectedValue){
-    const options=[...select.options];
-    const exact=options.find(o=>o.value===selectedValue||o.textContent===selectedValue);
+    const exact=[...select.options].find(o=>o.value===selectedValue||o.textContent===selectedValue||o.value.endsWith(" — "+selectedValue));
     if(exact)select.value=exact.value;
-    else if(selectedValue!==""){
-      select.value="__custom__";
-      $("bmodelCustom").value=selectedValue;
-    }
+    else {select.value="__custom__";$("bmodelCustom").value=selectedValue;}
   }
   if(customWrap)customWrap.hidden=select.value!=="__custom__";
+  setModelPicker(select.value||"");
+  renderModelOptions();
 }
 function guardPastTimeSlots(){
   const date=$("bdate"),time=$("btime");
@@ -436,7 +470,10 @@ function guardPastTimeSlots(){
 function bindEstimateEvents(){
   ["bwash","baddon"].forEach(id=>$(id)?.addEventListener("change",refreshBookingEstimate));
   $("bvehicle")?.addEventListener("change",()=>{populateBookingModels();refreshBookingEstimate();});
-  $("bmodel")?.addEventListener("change",()=>{const w=$("bmodelCustomWrap");if(w)w.hidden=$("bmodel").value!=="__custom__";});
+  $("modelPickerBtn")?.addEventListener("click",()=>{const panel=$("modelPickerPanel");if(!panel)return;panel.hidden=!panel.hidden;$("modelPickerBtn").setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){$("modelSearch").value="";renderModelOptions();setTimeout(()=>$("modelSearch")?.focus(),0);}});
+  $("modelSearch")?.addEventListener("input",renderModelOptions);
+  $("bmodelCustom")?.addEventListener("input",()=>{if($("bmodel").value!=="__custom__")setModelPicker("__custom__");});
+
   $("bdate")?.addEventListener("change",guardPastTimeSlots);
   guardPastTimeSlots();
   refreshBookingEstimate();
