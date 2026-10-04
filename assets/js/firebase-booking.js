@@ -53,7 +53,7 @@
 
     if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
 
-    showSaved(data);
+    showSaved(data);\n    try{\n      localStorage.setItem("daivik_last_booking_v1",JSON.stringify({id:data.id,wash:data.wash,vehicle:data.vehicle,model:data.model,at:Date.now()}));\n      localStorage.removeItem("daivik_booking_draft_v1");\n    }catch(e){}
   };
 
   window.trackBooking = async function () {
