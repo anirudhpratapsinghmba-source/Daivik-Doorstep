@@ -22,6 +22,7 @@
     $("sumOriginal").textContent = "₹" + Number(data.basePrice||0).toLocaleString("en-IN");
     $("sumDiscount").textContent = "−₹" + Number(data.discountAmount||0).toLocaleString("en-IN");
     $("sumLocationCharge").textContent = "₹" + Number(data.locationCharge||0).toLocaleString("en-IN");
+    const addonEl=$("sumAddon"); if(addonEl) addonEl.textContent = "₹" + Number(data.addon||0).toLocaleString("en-IN");
     $("sumPrice").textContent = "₹" + Number(data.total).toLocaleString("en-IN");
     $("sumName").textContent = data.name;
     $("sumSlot").textContent = data.date + " • " + data.time;
