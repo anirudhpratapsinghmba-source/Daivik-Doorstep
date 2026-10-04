@@ -316,23 +316,48 @@ function setCustomerPin(lat,lng,accuracy=null){
 }
 function useMyLocation(){
   openLocationModal();
-  if(!navigator.geolocation){
-    setModalStatus("GPS is not available. Tap the map to select your location.",true);return;
+  if(!window.isSecureContext){
+    setModalStatus("GPS requires a secure HTTPS connection. You can still select your location manually on the map.",true);
+    return;
   }
-  setModalStatus("📍 Reading your phone location…");
-  navigator.geolocation.getCurrentPosition(
-    p=>{
-      setCustomerPin(p.coords.latitude,p.coords.longitude,p.coords.accuracy);
-      setModalStatus("✓ Your current location is pinned. Tap/drag to adjust the exact service point, then Confirm Location.");
-    },
-    err=>{
-      console.warn("GPS failed",err);
-      setModalStatus(err.code===1?"Location permission denied. You can still select the location manually on the map.":"GPS unavailable. You can still select the location manually on the map.",true);
-    },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
-  );
+  if(!navigator.geolocation){
+    setModalStatus("This browser does not provide GPS location. Please select your location manually on the map.",true);
+    return;
+  }
+  const startGPS=()=>{
+    setModalStatus("📍 Requesting your exact phone location… Please allow Location if your browser asks.");
+    navigator.geolocation.getCurrentPosition(
+      p=>{
+        console.log("[Daivik GPS SUCCESS]",p.coords.latitude,p.coords.longitude,"accuracy:",p.coords.accuracy);
+        setCustomerPin(p.coords.latitude,p.coords.longitude,p.coords.accuracy);
+        setModalStatus("✓ Your current location is pinned. Tap/drag to adjust the exact service point, then Confirm Location.");
+      },
+      err=>{
+        console.warn("[Daivik GPS ERROR]",err.code,err.message,err);
+        const msg=err.code===1
+          ?"Location permission was denied. Allow Location for this site in Chrome Site Settings, then try again."
+          :err.code===2
+          ?"Your phone could not determine the location. Turn Android Location ON and try again outdoors/near a window."
+          :err.code===3
+          ?"GPS timed out. Turn Location ON and try again; you can also select the point manually on the map."
+          :"Unable to read your location. Please try again or select the point manually on the map.";
+        setModalStatus(msg,true);
+      },
+      {enableHighAccuracy:true,timeout:30000,maximumAge:0}
+    );
+  };
+  if(navigator.permissions?.query){
+    navigator.permissions.query({name:"geolocation"}).then(permission=>{
+      console.log("[Daivik GPS PERMISSION]",permission.state);
+      if(permission.state==="denied"){
+        setModalStatus("Location permission is blocked for this site. Open Chrome Site Settings → Location → Allow, then try again.",true);
+        return;
+      }
+      startGPS();
+    }).catch(()=>startGPS());
+  }else startGPS();
 }
-function confirmSelectedLocation(){
+function confirmSelectedLocation(){(){
   const lat=Number($( "bLat").value),lng=Number($( "bLng").value);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){setModalStatus("First place your pin on the map.",true);return;}
   const distance=Number($( "bDistance").value||0),charge=Number($( "bLocationCharge").value||0);
