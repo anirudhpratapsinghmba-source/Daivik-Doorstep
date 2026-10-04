@@ -20,6 +20,9 @@
  }
  function update(){
    const p=prices[vehicle.value]||prices.hatchback;
+   const ultraChip=chips.find(c=>c.dataset.wash==="ultra_basic");
+   if(ultraChip)ultraChip.disabled=!["hatchback","sedan"].includes(vehicle.value);
+   if(wash.value==="ultra_basic"&&!["hatchback","sedan"].includes(vehicle.value))wash.value="basic";
    const base=p[wash.value]||p.basic;
    const offer=Math.round(base*.10), final=base-offer;
    name.textContent=(model.value||"Your car")+" • "+p.n+" • "+wash.value.charAt(0).toUpperCase()+wash.value.slice(1);
