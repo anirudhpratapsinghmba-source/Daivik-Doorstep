@@ -49,19 +49,21 @@
    const saved=Math.round(base*.10);
    const final=base-saved;
    const selected=model.options[model.selectedIndex];
-   const modelName=selected?selected.textContent:"Select your model";
+   const customValue=document.getElementById("calcCustomModel")?.value.trim();
+   const modelName=model.value==="__custom__"?(customValue||"Custom model"):selected?selected.textContent:"Select your model";
    name.textContent=(modelName==="✎ My model isn't listed — enter manually"?"Custom model":modelName)+" • "+p.n;
    original.textContent="Standard "+money(base);
    price.textContent=money(final);
    discount.textContent="10% ONLINE BOOKING OFFER • SAVE "+money(saved);
    const book=document.getElementById("calcBook");
    if(book){
-     const params=new URLSearchParams({vehicle:vehicle.value,model:model.value,wash:wash.value,offer:"DAIVIK10"});
+     const params=new URLSearchParams({vehicle:vehicle.value,model:model.value==="__custom__"?(document.getElementById("calcCustomModel")?.value.trim()||"Custom model"):model.value,wash:wash.value,offer:"DAIVIK10"});
      book.href="booking.html?"+params.toString();
    }
  }
 
  vehicle.addEventListener("change",fillModels);
+ document.getElementById("calcCustomModel")?.addEventListener("input",update);
  model.addEventListener("change",()=>{
    const wrap=document.getElementById("calcCustomWrap");
    if(wrap)wrap.hidden=model.value!=="__custom__";
