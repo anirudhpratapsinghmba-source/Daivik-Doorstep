@@ -100,25 +100,4 @@
     }catch(e){alert("Could not prepare the WhatsApp message.");}
   };
 
-  window.trackBooking=async function(){
-    const id=$("trackBookingId").value.trim().toUpperCase();
-    if(!id)return alert("Enter your booking ID.");
-    const {data,error}=await client.rpc("track_booking",{p_booking_id:id});
-    if(error||!data||!data.length)return alert("Booking ID not found.");
-    const s=data[0];
-    $("trackResult").textContent=s.status+(s.accepted_date&&s.accepted_time?" • "+s.accepted_date+" • "+s.accepted_time:"");
-    $("trackResult").classList.add("show");
-  };
-
-  window.cancelBooking=async function(){
-    const raw=localStorage.getItem("daivikBooking");
-    if(!raw)return alert("No booking found on this device.");
-    const booking=JSON.parse(raw);
-    if(!booking.booking_token)return alert("This booking cannot be cancelled from this device.");
-    if(!confirm("Cancel booking "+booking.id+"?"))return;
-    const {data,error}=await client.rpc("cancel_booking",{p_booking_id:booking.id,p_booking_token:booking.booking_token});
-    if(error||!data)return alert("Cancellation is locked within 2 hours of the scheduled service or the booking is already cancelled.");
-    booking.status="Cancelled";localStorage.setItem("daivikBooking",JSON.stringify(booking));
-    alert("Booking cancelled successfully.");
-  };
 })();
