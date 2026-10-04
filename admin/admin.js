@@ -103,7 +103,7 @@ async function updateBooking(id){
   const ref=q(".paymentReference").value.trim()||null;
   const staff=q(".staffEmail").value.trim().toLowerCase()||null;
   const date=q(".acceptedDate").value||null,time=q(".acceptedTime").value.trim()||null;
-  const patch={status,accepted_date:date,accepted_time:time,payment_status:paymentStatus,payment_method:paymentMethod,collected_amount:collected,payment_reference:ref,assigned_staff_email:staff,updated_at:new Date().toISOString()};
+  const patch={status,accepted_date:date,accepted_time:time,payment_status:paymentStatus,payment_method:paymentMethod,collected_amount:collected,payment_reference:ref,assigned_staff_email:staff,updated_at:new Date().toISOString()}; if(paymentStatus==="Paid"){patch.paid_at=new Date().toISOString();patch.paid_by=adminEmail;} if(status==="Completed"){patch.closed_at=new Date().toISOString();patch.closed_by=adminEmail;}
   if(paymentStatus==="Paid"&&!patch.payment_method) return alert("Select Cash or UPI for a Paid booking.");
   if(paymentStatus==="Paid"&&!patch.collected_amount) return alert("Enter collected amount.");
   if(status==="Completed"&&(paymentStatus!=="Paid"||collected<Number(allBookings.find(b=>b.id===id)?.total||0))) return alert("A booking can be closed only after full payment is recorded.");
