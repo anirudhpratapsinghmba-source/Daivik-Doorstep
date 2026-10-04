@@ -19,6 +19,9 @@
     $("bookingId").textContent = data.id;
     $("sumService").textContent = P[data.vehicle].n + " — " + data.wash.charAt(0).toUpperCase() + data.wash.slice(1) + " Wash";
     $("sumCar").textContent = data.model || "Car model not specified";
+    $("sumOriginal").textContent = "₹" + Number(data.basePrice||0).toLocaleString("en-IN");
+    $("sumDiscount").textContent = "−₹" + Number(data.discountAmount||0).toLocaleString("en-IN");
+    $("sumLocationCharge").textContent = "₹" + Number(data.locationCharge||0).toLocaleString("en-IN");
     $("sumPrice").textContent = "₹" + Number(data.total).toLocaleString("en-IN");
     $("sumName").textContent = data.name;
     $("sumSlot").textContent = data.date + " • " + data.time;
@@ -44,7 +47,7 @@
 
     const {data,error}=await client.rpc("create_booking",{
       p_name:name,p_phone:phone,p_vehicle:vehicle,p_model:model,p_wash:wash,p_date:date,p_time:time,
-      p_address:address,p_lat:lat,p_lng:lng,p_addon:addon,p_scheduled_at:selectedSlotISO(date,time)
+      p_address:address,p_lat:lat,p_lng:lng,p_addon:addon,p_offer_code:getOfferCode(),p_scheduled_at:selectedSlotISO(date,time)
     });
     if(error){ console.error(error); const msg=(error.message||"Booking could not be saved."); if(errorBox){errorBox.textContent=msg+" If this is the first setup, run supabase/schema.sql in Supabase SQL Editor.";errorBox.classList.add("show");} else alert(msg); return; }
 
