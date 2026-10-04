@@ -39,6 +39,8 @@
     $("bookingSummary").scrollIntoView({behavior:"smooth",block:"center"});
   }
 
+  function getOfferCode(){ return ""; }
+
   window.createBooking=async function(){
     const button=$("confirmBookingBtn"),errorBox=$("bookingError");
     if(button){button.disabled=true;button.textContent="Saving booking…";}
