@@ -60,14 +60,10 @@ function updateLocation(lat,lng,address="",accuracy=null){
   $("bDistance").value=distance.toFixed(3);
   $("bLocationCharge").value=charge;
   if(address)$("baddress").value=address;
-  const accuracyText=Number.isFinite(accuracy)?" • GPS ±"+Math.round(accuracy)+"m":"";
-  setLocationStatus(distance<=FREE_RADIUS_KM
-    ?"✓ Exact location selected • "+distance.toFixed(1)+" km from Daivik base — FREE service charge"+accuracyText
-    :"⚠ Exact location selected • "+distance.toFixed(1)+" km from Daivik base — "+money(charge)+" service charge"+accuracyText);
+  const accuracyText=Number.isFinite(accuracy)?" • GPS accuracy ±"+Math.round(accuracy)+"m":"";
+  setLocationStatus("✓ Service location selected"+accuracyText+". Confirm this pin before booking.");
   const link=$("customerMapLink");
   if(link){link.href="https://www.google.com/maps?q="+lat+","+lng;link.style.display="inline";}
-  const q=$("quickLocationStatus");
-  if(q)q.textContent=distance<=FREE_RADIUS_KM?"✓ Location selected — Free service charge":"⚠ Location selected — "+money(charge)+" service charge";
   refreshBookingEstimate();
 }
 async function reverseGeocode(lat,lng){
@@ -360,13 +356,12 @@ function useMyLocation(){
 function confirmSelectedLocation(){
   const lat=Number($( "bLat").value),lng=Number($( "bLng").value);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){setModalStatus("First place your pin on the map.",true);return;}
-  const distance=Number($( "bDistance").value||0),charge=Number($( "bLocationCharge").value||0);
+  const distance=Number($( "bDistance").value||0);
   if(!$( "baddress").value.trim())$( "baddress").value="Pinned map location ("+lat.toFixed(6)+", "+lng.toFixed(6)+")";
   setLocationStatus("✓ Service location confirmed. You can now complete the booking.");
   const link=$( "customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
   setModalStatus("✓ Location confirmed. You can now complete the booking.");
   locationConfirmed=true;
-  refreshBookingEstimate();
   const submit=$("confirmBookingBtn");
   if(submit){submit.scrollIntoView({behavior:"smooth",block:"center"});}
   setTimeout(closeLocationModal,300);
@@ -399,31 +394,36 @@ function setModelPicker(value){
   if(customWrap)customWrap.hidden=value!=="__custom__";
 }
 function renderModelOptions(){
-  const select=$("bmodel"), list=$("modelOptions");
+  const select=$("bmodel"),list=$("modelOptions");
   if(!select||!list)return;
   const search=($("modelSearch")?.value||"").trim().toLowerCase();
   list.innerHTML="";
-  let visible=0;
+  let visible=0,lastBrand="";
   [...select.options].forEach(opt=>{
     if(!opt.value)return;
-    if(opt.tagName==="OPTGROUP")return;
-    if(opt.parentElement?.tagName==="OPTGROUP"){
-      const brand=opt.parentElement.label.toLowerCase();
-      if(search && !brand.includes(search) && !opt.textContent.toLowerCase().includes(search))return;
-      if(visible===0 || list.lastElementChild?.dataset?.brand!==opt.parentElement.label){
-        const h=document.createElement("div");h.className="modelGroup";h.textContent=opt.parentElement.label;h.dataset.brand=opt.parentElement.label;list.appendChild(h);
+    const group=opt.parentElement?.tagName==="OPTGROUP"?opt.parentElement:null;
+    if(group){
+      const brand=group.label;
+      if(search&&!brand.toLowerCase().includes(search)&&!opt.textContent.toLowerCase().includes(search))return;
+      if(brand!==lastBrand){
+        const h=document.createElement("div");h.className="modelGroup";h.textContent=brand;list.appendChild(h);lastBrand=brand;
       }
-      const b=document.createElement("button");b.type="button";b.className="modelOption";b.textContent=opt.textContent;
-      b.addEventListener("click",()=>{setModelPicker(opt.value);$("modelPickerPanel").hidden=true;renderModelOptions();});
-      list.appendChild(b);visible++;
-    }else if(opt.value==="__custom__"){
-      if(search && !("custom other".includes(search)))return;
-      const b=document.createElement("button");b.type="button";b.className="modelOption custom";b.textContent="✎ Custom / Other — enter manually";
-      b.addEventListener("click",()=>{setModelPicker("__custom__");$("modelPickerPanel").hidden=false;$("bmodelCustom")?.focus();});
-      list.appendChild(b);visible++;
+      const btn=document.createElement("button");
+      btn.type="button";btn.className="modelOption";btn.textContent=opt.textContent;
+      btn.addEventListener("click",()=>{setModelPicker(opt.value);$("modelPickerPanel").hidden=true;});
+      list.appendChild(btn);visible++;
+      return;
+    }
+    if(opt.value==="__custom__"){
+      if(search&&!["custom","other"].some(x=>x.includes(search)))return;
+      const btn=document.createElement("button");btn.type="button";btn.className="modelOption custom";btn.textContent="✎ Custom / Other — enter manually";
+      btn.addEventListener("click",()=>{setModelPicker("__custom__");$("modelPickerPanel").hidden=false;$("bmodelCustom")?.focus();});
+      list.appendChild(btn);visible++;
     }
   });
-  if(!visible){const e=document.createElement("div");e.className="modelEmpty";e.textContent="No model found. Choose Custom / Other.";list.appendChild(e);}
+  if(!visible){
+    const e=document.createElement("div");e.className="modelEmpty";e.textContent="No model found. Choose Custom / Other.";list.appendChild(e);
+  }
 }
 function populateBookingModels(selectedValue=""){
   const select=$("bmodel"), customWrap=$("bmodelCustomWrap");
