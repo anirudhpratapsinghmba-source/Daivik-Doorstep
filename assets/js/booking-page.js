@@ -5,6 +5,7 @@ const ONLINE_OFFER="DAIVIK10";
 const P=window.DAIVIK_PRICING||{};
 const $=id=>document.getElementById(id);
 let locationConfirmed=false;
+window.daivikLocationConfirmed=false;
 
 function haversineKm(a,b,c,d){
   const R=6371,rad=Math.PI/180;
@@ -53,6 +54,7 @@ function refreshBookingEstimate(){
 function updateLocation(lat,lng,address="",accuracy=null){
   if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
   locationConfirmed=false;
+  window.daivikLocationConfirmed=false;
   const distance=haversineKm(DAIVIK_BASE.lat,DAIVIK_BASE.lng,lat,lng);
   const charge=locationCharge(distance);
   $("bLat").value=lat.toFixed(7);
@@ -362,6 +364,7 @@ function confirmSelectedLocation(){
   const link=$( "customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
   setModalStatus("✓ Location confirmed. You can now complete the booking.");
   locationConfirmed=true;
+  window.daivikLocationConfirmed=true;
   const submit=$("confirmBookingBtn");
   if(submit){submit.scrollIntoView({behavior:"smooth",block:"center"});}
   setTimeout(closeLocationModal,300);
