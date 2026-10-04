@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daivik Staff | Service Jobs</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+:root{--a:#071014;--g:#20c96b;--p:#f4f7f5;--muted:#728087;--line:#dfe7e3;--warn:#fff6df;--danger:#ffe9e9}
+*{box-sizing:border-box}body{margin:0;background:var(--p);color:var(--a);font-family:Inter,Arial,sans-serif}.wrap{max-width:1100px;margin:auto;padding:18px}.brand{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}.logo{font-weight:950;letter-spacing:.12em}.logo small{display:block;font-size:8px;letter-spacing:.2em;color:var(--muted);margin-top:4px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 18px 55px #0710140b}.login{max-width:440px;margin:10vh auto}.login h1{font-size:30px;margin:18px 0 6px}.sub{color:var(--muted);font-size:13px;line-height:1.55}.input,.select{width:100%;padding:12px;border:1px solid #ccd7d2;border-radius:11px;margin:6px 0;font-size:14px;background:#fff}.btn{border:0;border-radius:11px;padding:12px 15px;background:var(--a);color:#fff;font-weight:800;cursor:pointer}.btn.green{background:var(--g);color:#06140b}.btn.light{background:#edf3ef;color:var(--a)}.btn:disabled{opacity:.5;cursor:not-allowed}.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:16px}.jobs{display:grid;gap:14px}.job{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.jobhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.id{font-weight:950;letter-spacing:.05em}.badge{display:inline-flex;padding:6px 9px;border-radius:999px;background:#edf3ef;font-size:10px;font-weight:900}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.item{padding:11px;border-radius:12px;background:#f7faf8}.item small{display:block;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em}.item b{display:block;margin-top:4px}.actions{display:grid;gap:9px;margin-top:14px}.paymentbox{border:1px solid #cfe2d7;border-radius:16px;padding:14px;background:#fbfffc}.paymentchoice{display:grid;grid-template-columns:1fr 1fr;gap:9px}.qrwrap{display:grid;grid-template-columns:190px 1fr;gap:14px;align-items:center;margin-top:12px}.qr{width:190px;min-height:190px;border:1px dashed #b8c8c0;border-radius:14px;display:grid;place-items:center;background:#fff;padding:8px}.qr img{max-width:100%;max-height:170px}.amount{font-size:28px;font-weight:950}.hint{font-size:11px;color:var(--muted);line-height:1.5}.error{color:#b21e1e;font-size:12px;min-height:18px}.success{color:#087f5b;font-size:12px}.empty{text-align:center;padding:45px;color:var(--muted)}@media(max-width:650px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.qrwrap{grid-template-columns:1fr}.qr{margin:auto}.toolbar{align-items:flex-start;flex-direction:column}.paymentchoice{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div id="loginPanel" class="panel login">
+  <div class="logo">DAIVIK<small>SERVICE PERSON ACCESS</small></div>
+  <h1>Service Login</h1>
+  <p class="sub">Use the staff account assigned by Daivik. You will only see bookings assigned to your login.</p>
+  <input id="email" class="input" type="email" placeholder="Staff email" autocomplete="username">
+  <input id="password" class="input" type="password" placeholder="Password" autocomplete="current-password">
+  <button id="loginBtn" class="btn green" style="width:100%;margin-top:8px">Sign In</button>
+  <p id="loginMessage" class="error"></p>
+ </div>
+ <div id="app" hidden>
+  <div class="brand"><div class="logo">DAIVIK<small>DOORSTEP CAR CARE • SERVICE</small></div><button id="logoutBtn" class="btn light">Log out</button></div>
+  <div class="toolbar"><div><h1 style="margin:0 0 4px">My Jobs</h1><div class="sub">Accept → start service → collect payment → close booking.</div></div><button id="refreshBtn" class="btn light">Refresh</button></div>
+  <div id="jobs" class="jobs"></div><div id="empty" class="panel empty" hidden>No bookings are currently assigned to this account.</div>
+ </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="assets/js/supabase-config.js?v=20261004-staff"></script>
+<script src="staff/staff.js?v=20261004-staff"></script>
+</body></html>
