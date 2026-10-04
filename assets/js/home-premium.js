@@ -10,6 +10,7 @@
  };
  const vehicle=document.getElementById("calcVehicle"),model=document.getElementById("calcModel"),wash=document.getElementById("calcWash");
  const original=document.getElementById("calcOriginal"),price=document.getElementById("calcPrice"),name=document.getElementById("calcName"),discount=document.getElementById("calcDiscount");
+ const chips=[...document.querySelectorAll("[data-wash]")];
  if(!vehicle||!model||!wash)return;
  const money=n=>"₹"+Number(n).toLocaleString("en-IN");
  function fillModels(){
@@ -21,13 +22,20 @@
    const p=prices[vehicle.value]||prices.hatchback;
    const base=p[wash.value]||p.basic;
    const offer=Math.round(base*.10), final=base-offer;
-   name.textContent=(model.value||"Your car")+" • "+p.n;
+   name.textContent=(model.value||"Your car")+" • "+p.n+" • "+wash.value.charAt(0).toUpperCase()+wash.value.slice(1);
    original.textContent=money(base);
    price.textContent=money(final);
    discount.textContent="10% ONLINE BOOKING OFFER • Save "+money(offer);
+   chips.forEach(c=>c.classList.toggle("active",c.dataset.wash===wash.value));
  }
- vehicle.addEventListener("change",fillModels);wash.addEventListener("change",update);model.addEventListener("change",update);
+ chips.forEach(chip=>chip.addEventListener("click",()=>{wash.value=chip.dataset.wash;update()}));
+ vehicle.addEventListener("change",fillModels);
+ wash.addEventListener("change",update);
+ model.addEventListener("change",update);
  fillModels();
  const book=document.getElementById("calcBook");
- if(book)book.addEventListener("click",e=>{e.preventDefault();location.href="booking.html?vehicle="+encodeURIComponent(vehicle.value)+"&wash="+encodeURIComponent(wash.value)+"&model="+encodeURIComponent(model.value)+"&offer=DAIVIK10"});
+ if(book)book.addEventListener("click",e=>{
+   e.preventDefault();
+   location.href="booking.html?vehicle="+encodeURIComponent(vehicle.value)+"&wash="+encodeURIComponent(wash.value)+"&model="+encodeURIComponent(model.value)+"&offer=DAIVIK10";
+ });
 })();
