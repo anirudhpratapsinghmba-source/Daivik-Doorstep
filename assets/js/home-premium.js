@@ -1,8 +1,8 @@
 /* Daivik front-page pricing calculator */
 (() => {
  const prices={
-  hatchback:{n:"Hatchback",basic:399,medium:599,premium:899,models:["Maruti Swift","Hyundai Grand i10","Tata Tiago","Maruti Baleno","Other"]},
-  sedan:{n:"Sedan",basic:499,medium:699,premium:999,models:["Honda City","Hyundai Verna","Maruti Dzire","Honda Amaze","Other"]},
+  hatchback:{n:"Hatchback",ultra_basic:299,basic:399,medium:599,premium:899,models:["Maruti Swift","Hyundai Grand i10","Tata Tiago","Maruti Baleno","Other"]},
+  sedan:{n:"Sedan",ultra_basic:299,basic:399,medium:599,premium:899,models:["Honda City","Hyundai Verna","Maruti Dzire","Honda Amaze","Other"]},
   "compact-suv":{n:"Compact SUV",basic:599,medium:799,premium:1099,models:["Hyundai Venue","Kia Sonet","Tata Nexon","Maruti Brezza","Other"]},
   "mid-suv":{n:"Mid-Size SUV",basic:699,medium:899,premium:1199,models:["Hyundai Creta","Kia Seltos","Toyota Hyryder","Maruti Grand Vitara","Other"]},
   "full-suv":{n:"Full-Size SUV / 7-Seater",basic:799,medium:999,premium:1299,models:["Toyota Fortuner","MG Hector","XUV700","Safari","Other"]},
