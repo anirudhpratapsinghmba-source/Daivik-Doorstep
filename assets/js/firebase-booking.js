@@ -27,7 +27,7 @@
   function showSaved(data){
     localStorage.setItem("daivikBooking",JSON.stringify(data));
     $("bookingId").textContent=data.id;
-    $("sumService").textContent=(P[data.vehicle]?.n||data.vehicle)+" — "+String(data.wash||"").replaceAll("_"," ")+" Wash";
+    $("sumService").textContent=((window.DAIVIK_PRICING?.[data.vehicle]?.n)||data.vehicle)+" — "+String(data.wash||"").replaceAll("_"," ")+" Wash";
     $("sumCar").textContent=data.model||"Car model not specified";
     const addonEl=$("sumAddon");if(addonEl)addonEl.textContent="₹"+Number(data.addon||0).toLocaleString("en-IN");
     $("sumPrice").textContent="₹"+Number(data.total||0).toLocaleString("en-IN");
