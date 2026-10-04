@@ -145,9 +145,15 @@ function showBooking(d){$("bookingId").textContent=d.id;$("sumService").textCont
 function sendSavedBooking(){const d=JSON.parse(localStorage.getItem("daivikBooking")||"null");if(!d)return alert("No booking found.");const msg="🚗 DAIVIK DOORSTEP CAR CARE — BOOKING REQUEST\\n\\n🆔 "+d.id+"\\n👤 "+d.name+"\\n📱 "+d.phone+"\\n🚘 "+(d.model||"Not specified")+"\\n🧽 "+d.wash+" Wash\\n💰 Total: ₹"+d.total.toLocaleString("en-IN")+"\\n📅 "+d.date+" • "+d.time+"\\n📍 "+d.address+"\\n📏 "+Number(d.distanceKm||0).toFixed(1)+" km | Location charge: ₹"+Number(d.locationCharge||0)+"\\n🗺️ https://www.google.com/maps?q="+d.lat+","+d.lng;window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(msg),"_blank")}
 document.addEventListener("DOMContentLoaded",()=>{
   const q=new URLSearchParams(location.search);
-  const w=q.get("wash"),p=q.get("plan");
-  if(w&&P[Object.keys(P)[0]])$("bwash").value=w;
+  const w=q.get("wash"),p=q.get("plan"),vehicle=q.get("vehicle"),model=q.get("model"),offer=q.get("offer");
+  if(w&&["basic","medium","premium"].includes(w))$("bwash").value=w;
+  if(vehicle&&P[vehicle])$("bvehicle").value=vehicle;
+  if(model)$("bmodel").value=model;
   if(p)$("bookingType").textContent=p.charAt(0).toUpperCase()+p.slice(1)+" Monthly Plan";
+  if(offer==="DAIVIK10"){
+    const note=$("bookingOfferNote");
+    if(note){note.textContent="10% online booking offer selected from the price calculator. Final offer eligibility and payable amount are confirmed before payment.";note.style.display="block";}
+  }
   setTimeout(resumeAfterMaps,600);
 });
 window.addEventListener("pageshow",()=>setTimeout(resumeAfterMaps,600));
