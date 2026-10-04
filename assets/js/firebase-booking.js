@@ -19,9 +19,9 @@
     $("bookingId").textContent = data.id;
     $("sumService").textContent = P[data.vehicle].n + " — " + data.wash.charAt(0).toUpperCase() + data.wash.slice(1) + " Wash";
     $("sumCar").textContent = data.model || "Car model not specified";
-    $("sumOriginal").textContent = "₹" + Number(data.basePrice||0).toLocaleString("en-IN");
-    $("sumDiscount").textContent = "−₹" + Number(data.discountAmount||0).toLocaleString("en-IN");
-    $("sumLocationCharge").textContent = "₹" + Number(data.locationCharge||0).toLocaleString("en-IN");
+    const originalEl=$("sumOriginal"); if(originalEl) originalEl.textContent = "₹" + Number(data.basePrice||0).toLocaleString("en-IN");
+    const discountEl=$("sumDiscount"); if(discountEl) discountEl.textContent = "−₹" + Number(data.discountAmount||0).toLocaleString("en-IN");
+    const locationChargeEl=$("sumLocationCharge"); if(locationChargeEl) locationChargeEl.textContent = "₹" + Number(data.locationCharge||0).toLocaleString("en-IN");
     const addonEl=$("sumAddon"); if(addonEl) addonEl.textContent = "₹" + Number(data.addon||0).toLocaleString("en-IN");
     $("sumPrice").textContent = "₹" + Number(data.total).toLocaleString("en-IN");
     $("sumName").textContent = data.name;
