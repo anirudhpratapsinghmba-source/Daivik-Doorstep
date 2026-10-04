@@ -54,7 +54,10 @@
     if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
 
     showSaved(data);
-    try{\n      localStorage.setItem("daivik_last_booking_v1",JSON.stringify({id:data.id,wash:data.wash,vehicle:data.vehicle,model:data.model,at:Date.now()}));\n      localStorage.removeItem("daivik_booking_draft_v1");\n    }catch(e){}
+    try{
+      localStorage.setItem("daivik_last_booking_v1",JSON.stringify({id:data.id,wash:data.wash,vehicle:data.vehicle,model:data.model,at:Date.now()}));
+      localStorage.removeItem("daivik_booking_draft_v1");
+    }catch(e){}
   };
 
   window.sendSavedBooking = function () {
@@ -72,7 +75,8 @@
         "Date/Time: "+d.date+" • "+d.time,
         "Total: ₹"+Number(d.total||0).toLocaleString("en-IN"),
         "Status: "+(d.status||"Pending Confirmation")
-      ].join("\n");
+      ].join("
+");
       window.open("https://wa.me/917983558954?text="+encodeURIComponent(msg),"_blank","noopener");
     }catch(e){alert("Could not prepare the WhatsApp message.");}
   };
