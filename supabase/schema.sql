@@ -1,11 +1,12 @@
 -- Daivik Doorstep Car Care — Supabase production schema
--- Run this entire file in Supabase SQL Editor after each schema revision.
+-- Booking + staff access + on-site cash/UPI collection + QR settings.
 
 create extension if not exists pgcrypto with schema extensions;
 
 drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,timestamptz);
 drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz);
 drop function if exists public.track_booking(text);
+drop function if exists public.staff_update_booking(text,text,text,integer,text);
 
 create table if not exists public.bookings (
   id text primary key,
@@ -28,50 +29,110 @@ create table if not exists public.bookings (
   offer_code text,
   total integer not null,
   payment_status text not null default 'Pending' check (payment_status in ('Pending','Paid','Failed','Refunded')),
+  payment_method text check (payment_method in ('Cash','UPI')),
+  collected_amount integer not null default 0 check (collected_amount >= 0),
+  payment_reference text,
   payment_id text,
   payment_order_id text,
-  status text not null default 'Pending Confirmation' check (status in ('Pending Confirmation','Accepted','Cancelled','Completed')),
+  paid_at timestamptz,
+  paid_by text,
+  assigned_staff_email text,
+  status text not null default 'Pending Confirmation' check (status in ('Pending Confirmation','Accepted','In Service','Payment Pending','Cancelled','Completed')),
   accepted_date date,
   accepted_time text,
   scheduled_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  cancelled_at timestamptz
+  cancelled_at timestamptz,
+  closed_at timestamptz,
+  closed_by text
 );
 
--- Upgrade existing installations safely when this file is re-run.
+-- Safe upgrades for an existing installation.
 alter table public.bookings drop constraint if exists bookings_wash_check;
 alter table public.bookings add constraint bookings_wash_check check (wash in ('ultra_basic','basic','medium','premium'));
 alter table public.bookings add column if not exists discount_amount integer not null default 0;
 alter table public.bookings add column if not exists offer_code text;
 alter table public.bookings add column if not exists payment_status text not null default 'Pending';
+alter table public.bookings add column if not exists payment_method text;
+alter table public.bookings add column if not exists collected_amount integer not null default 0;
+alter table public.bookings add column if not exists payment_reference text;
 alter table public.bookings add column if not exists payment_id text;
 alter table public.bookings add column if not exists payment_order_id text;
+alter table public.bookings add column if not exists paid_at timestamptz;
+alter table public.bookings add column if not exists paid_by text;
+alter table public.bookings add column if not exists assigned_staff_email text;
+alter table public.bookings add column if not exists closed_at timestamptz;
+alter table public.bookings add column if not exists closed_by text;
 alter table public.bookings drop constraint if exists bookings_payment_status_check;
 alter table public.bookings add constraint bookings_payment_status_check check (payment_status in ('Pending','Paid','Failed','Refunded'));
+alter table public.bookings drop constraint if exists bookings_payment_method_check;
+alter table public.bookings add constraint bookings_payment_method_check check (payment_method is null or payment_method in ('Cash','UPI'));
+alter table public.bookings drop constraint if exists bookings_status_check;
+alter table public.bookings add constraint bookings_status_check check (status in ('Pending Confirmation','Accepted','In Service','Payment Pending','Cancelled','Completed'));
 
 create index if not exists bookings_created_at_idx on public.bookings(created_at desc);
 create index if not exists bookings_scheduled_at_idx on public.bookings(scheduled_at);
 create index if not exists bookings_phone_idx on public.bookings(phone);
 create index if not exists bookings_payment_status_idx on public.bookings(payment_status);
+create index if not exists bookings_staff_email_idx on public.bookings(assigned_staff_email);
+
+-- One-row merchant payment configuration. Store only public payment details here.
+create table if not exists public.payment_settings (
+  id integer primary key default 1 check (id=1),
+  merchant_name text not null default 'Daivik Doorstep Car Care',
+  upi_id text,
+  qr_image_url text,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.payment_settings (id,merchant_name)
+values (1,'Daivik Doorstep Car Care')
+on conflict (id) do nothing;
 
 alter table public.bookings enable row level security;
+alter table public.payment_settings enable row level security;
 
 drop policy if exists "Admins can read bookings" on public.bookings;
 create policy "Admins can read bookings"
 on public.bookings for select to authenticated
-using ((auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+using ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+
+drop policy if exists "Assigned staff can read bookings" on public.bookings;
+create policy "Assigned staff can read bookings"
+on public.bookings for select to authenticated
+using (
+  lower(coalesce(assigned_staff_email,'')) = lower(coalesce((select auth.jwt() ->> 'email'),''))
+);
 
 drop policy if exists "Admins can update bookings" on public.bookings;
 create policy "Admins can update bookings"
 on public.bookings for update to authenticated
-using ((auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com')
-with check ((auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+using ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com')
+with check ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
 
 drop policy if exists "Admins can delete bookings" on public.bookings;
 create policy "Admins can delete bookings"
 on public.bookings for delete to authenticated
-using ((auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+using ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+
+drop policy if exists "Authenticated can read payment settings" on public.payment_settings;
+create policy "Authenticated can read payment settings"
+on public.payment_settings for select to authenticated
+using (true);
+
+drop policy if exists "Admin can update payment settings" on public.payment_settings;
+create policy "Admin can update payment settings"
+on public.payment_settings for update to authenticated
+using ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com')
+with check ((select auth.jwt() ->> 'email') = 'anirudhpratapsingh.mba@gmail.com');
+
+revoke all on table public.bookings from anon, authenticated;
+grant select on table public.bookings to authenticated;
+grant update, delete on table public.bookings to authenticated;
+
+revoke all on table public.payment_settings from anon, authenticated;
+grant select, update on table public.payment_settings to authenticated;
 
 create or replace function public.create_booking(
   p_name text,
@@ -102,30 +163,14 @@ declare
   v_total integer;
   v_row public.bookings;
 begin
-  if trim(coalesce(p_name,'')) = '' or p_phone !~ '^[0-9]{10}$' then
-    raise exception 'Invalid customer details';
-  end if;
-  if p_vehicle not in ('hatchback','sedan','compact-suv','mid-suv','full-suv','luxury-suv') then
-    raise exception 'Invalid vehicle category';
-  end if;
-  if p_wash not in ('ultra_basic','basic','medium','premium') then
-    raise exception 'Invalid wash type';
-  end if;
-  if p_wash='ultra_basic' and p_vehicle not in ('hatchback','sedan') then
-    raise exception 'Ultra Basic is available for Hatchback and Sedan only';
-  end if;
-  if p_addon not in (0,199,299,349,399,499) then
-    raise exception 'Invalid add-on';
-  end if;
-  if trim(coalesce(p_address,'')) = '' then
-    raise exception 'Service address is required';
-  end if;
-  if p_lat is null or p_lng is null then
-    raise exception 'Exact service location is required';
-  end if;
+  if trim(coalesce(p_name,'')) = '' or p_phone !~ '^[0-9]{10}$' then raise exception 'Invalid customer details'; end if;
+  if p_vehicle not in ('hatchback','sedan','compact-suv','mid-suv','full-suv','luxury-suv') then raise exception 'Invalid vehicle category'; end if;
+  if p_wash not in ('ultra_basic','basic','medium','premium') then raise exception 'Invalid wash type'; end if;
+  if p_wash='ultra_basic' and p_vehicle not in ('hatchback','sedan') then raise exception 'Ultra Basic is available for Hatchback and Sedan only'; end if;
+  if p_addon not in (0,199,299,349,399,499) then raise exception 'Invalid add-on'; end if;
+  if trim(coalesce(p_address,'')) = '' then raise exception 'Service address is required'; end if;
+  if p_lat is null or p_lng is null then raise exception 'Exact service location is required'; end if;
 
-  -- Fixed Daivik service base: 29.972586, 78.062215.
-  -- Distance is the Haversine straight-line distance used consistently by site + backend.
   v_distance := round((
     6371 * 2 * asin(
       sqrt(
@@ -136,10 +181,7 @@ begin
     )
   )::numeric, 3);
 
-  v_location_charge := case
-    when v_distance > 10 then round((v_distance - 10) * 8)
-    else 0
-  end;
+  v_location_charge := case when v_distance > 10 then round((v_distance - 10) * 8) else 0 end;
 
   v_base_price := case p_vehicle
     when 'hatchback' then case p_wash when 'ultra_basic' then 299 when 'basic' then 399 when 'medium' then 599 else 899 end
@@ -150,49 +192,30 @@ begin
     when 'luxury-suv' then case p_wash when 'basic' then 999 when 'medium' then 1199 else 1499 end
   end;
 
-  v_discount := case
-    when upper(trim(coalesce(p_offer_code,''))) = 'DAIVIK10' then round(v_base_price * 0.10)
-    else 0
-  end;
-
+  v_discount := case when upper(trim(coalesce(p_offer_code,''))) = 'DAIVIK10' then round(v_base_price * 0.10) else 0 end;
   v_total := greatest(0,v_base_price - v_discount) + p_addon + v_location_charge;
   v_id := 'DVK-' || upper(substr(md5(extensions.gen_random_uuid()::text),1,8));
 
   insert into public.bookings (
     id,name,phone,vehicle,model,wash,date,time,address,lat,lng,
     distance_km,location_charge,addon,base_price,discount_amount,offer_code,total,
-    payment_status,status,scheduled_at
+    payment_status,payment_method,collected_amount,status,scheduled_at
   )
   values (
     v_id,trim(p_name),p_phone,p_vehicle,nullif(trim(coalesce(p_model,'')),''),p_wash,
     p_date,p_time,trim(p_address),p_lat,p_lng,v_distance,v_location_charge,p_addon,
     v_base_price,v_discount,nullif(trim(coalesce(p_offer_code,'')),''),v_total,
-    'Pending','Pending Confirmation',p_scheduled_at
+    'Pending',null,0,'Pending Confirmation',p_scheduled_at
   )
   returning * into v_row;
 
   return jsonb_build_object(
-    'id',v_row.id,
-    'booking_token',v_row.booking_token,
-    'name',v_row.name,
-    'phone',v_row.phone,
-    'vehicle',v_row.vehicle,
-    'model',v_row.model,
-    'wash',v_row.wash,
-    'date',v_row.date,
-    'time',v_row.time,
-    'address',v_row.address,
-    'lat',v_row.lat,
-    'lng',v_row.lng,
-    'distanceKm',v_row.distance_km,
-    'locationCharge',v_row.location_charge,
-    'addon',v_row.addon,
-    'basePrice',v_row.base_price,
-    'discountAmount',v_row.discount_amount,
-    'offerCode',v_row.offer_code,
-    'total',v_row.total,
-    'paymentStatus',v_row.payment_status,
-    'status',v_row.status
+    'id',v_row.id,'booking_token',v_row.booking_token,'name',v_row.name,'phone',v_row.phone,
+    'vehicle',v_row.vehicle,'model',v_row.model,'wash',v_row.wash,'date',v_row.date,'time',v_row.time,
+    'address',v_row.address,'lat',v_row.lat,'lng',v_row.lng,'distanceKm',v_row.distance_km,
+    'locationCharge',v_row.location_charge,'addon',v_row.addon,'basePrice',v_row.base_price,
+    'discountAmount',v_row.discount_amount,'offerCode',v_row.offer_code,'total',v_row.total,
+    'paymentStatus',v_row.payment_status,'status',v_row.status
   );
 end;
 $$;
@@ -203,13 +226,98 @@ language sql
 security definer
 set search_path = ''
 as $$
-  select b.status, b.accepted_date, b.accepted_time, b.payment_status, b.total
+  select b.status,b.accepted_date,b.accepted_time,b.payment_status,b.total
   from public.bookings b
-  where upper(b.id) = upper(trim(p_booking_id))
+  where upper(b.id)=upper(trim(p_booking_id))
   limit 1;
 $$;
 
-create or replace function public.cancel_booking(p_booking_id text, p_booking_token uuid)
+-- Staff can only perform the three controlled actions below on bookings assigned to their own email.
+create or replace function public.staff_update_booking(
+  p_booking_id text,
+  p_action text,
+  p_payment_method text default null,
+  p_collected_amount integer default null,
+  p_payment_reference text default null
+)
+returns public.bookings
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_email text := lower(trim(coalesce((select auth.jwt() ->> 'email'),'')));
+  v_row public.bookings;
+  v_amount integer;
+begin
+  if v_email='' then raise exception 'Authentication required'; end if;
+
+  select * into v_row
+  from public.bookings
+  where upper(id)=upper(trim(p_booking_id))
+    and lower(coalesce(assigned_staff_email,''))=v_email
+  for update;
+
+  if not found then raise exception 'Booking is not assigned to this staff account'; end if;
+  if v_row.status='Cancelled' then raise exception 'Cancelled bookings cannot be updated'; end if;
+  if v_row.status='Completed' and p_action<>'close' then raise exception 'Booking is already closed'; end if;
+
+  if lower(p_action)='start' then
+    if v_row.status not in ('Accepted','In Service') then raise exception 'Booking must be accepted before service starts'; end if;
+    update public.bookings
+    set status='In Service',updated_at=now()
+    where id=v_row.id
+    returning * into v_row;
+
+  elsif lower(p_action)='payment' then
+    if v_row.status not in ('In Service','Payment Pending') then raise exception 'Start the service before recording payment'; end if;
+    if p_payment_method not in ('Cash','UPI') then raise exception 'Choose Cash or UPI'; end if;
+    v_amount := coalesce(p_collected_amount,0);
+    if v_amount <= 0 then raise exception 'Enter the amount collected'; end if;
+    if v_amount < v_row.total then raise exception 'Collected amount cannot be less than the booking total'; end if;
+    if p_payment_method='UPI' and trim(coalesce(p_payment_reference,''))='' then
+      raise exception 'Enter the UPI transaction/reference ID after payment';
+    end if;
+
+    update public.bookings
+    set payment_status='Paid',
+        payment_method=p_payment_method,
+        collected_amount=v_amount,
+        payment_reference=nullif(trim(coalesce(p_payment_reference,'')),''),
+        paid_at=now(),
+        paid_by=v_email,
+        status='Payment Pending',
+        updated_at=now()
+    where id=v_row.id
+    returning * into v_row;
+
+  elsif lower(p_action)='close' then
+    if v_row.payment_status<>'Paid' then raise exception 'Payment must be recorded before closing the booking'; end if;
+    if coalesce(v_row.collected_amount,0) < v_row.total then raise exception 'Full payment amount is required before closing'; end if;
+
+    update public.bookings
+    set status='Completed',closed_at=now(),closed_by=v_email,updated_at=now()
+    where id=v_row.id
+    returning * into v_row;
+
+  else
+    raise exception 'Unknown staff action';
+  end if;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) from public;
+grant execute on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) to anon,authenticated;
+
+revoke all on function public.track_booking(text) from public;
+grant execute on function public.track_booking(text) to anon,authenticated;
+
+revoke all on function public.staff_update_booking(text,text,text,integer,text) from public,anon;
+grant execute on function public.staff_update_booking(text,text,text,integer,text) to authenticated;
+
+create or replace function public.cancel_booking(p_booking_id text,p_booking_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -217,7 +325,7 @@ set search_path = ''
 as $$
 begin
   update public.bookings
-  set status='Cancelled', cancelled_at=now(), updated_at=now()
+  set status='Cancelled',cancelled_at=now(),updated_at=now()
   where upper(id)=upper(trim(p_booking_id))
     and booking_token=p_booking_token
     and status in ('Pending Confirmation','Accepted')
@@ -226,14 +334,5 @@ begin
 end;
 $$;
 
-revoke all on table public.bookings from anon, authenticated;
-grant select, update, delete on public.bookings to authenticated;
-
-revoke all on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) from public;
-grant execute on function public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz) to anon, authenticated;
-
-revoke all on function public.track_booking(text) from public;
-grant execute on function public.track_booking(text) to anon, authenticated;
-
 revoke all on function public.cancel_booking(text,uuid) from public;
-grant execute on function public.cancel_booking(text,uuid) to anon, authenticated;
+grant execute on function public.cancel_booking(text,uuid) to anon,authenticated;
