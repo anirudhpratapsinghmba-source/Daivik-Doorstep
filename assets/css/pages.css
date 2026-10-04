@@ -376,3 +376,6 @@ body.motion-ready section.sec.motion-section .infoCard {
     min-height: 0;
   }
 }
+
+/* Four-tier Daivik service menu */
+.cards-four{grid-template-columns:repeat(4,1fr)!important}.cards-four .card{min-width:0}.cards-four .card .head{min-height:185px}.cards-four .card .body{min-height:300px}@media(max-width:1100px){.cards-four{grid-template-columns:repeat(2,1fr)!important}}@media(max-width:620px){.cards-four{grid-template-columns:1fr!important}.cards-four .card .body{min-height:auto}}
