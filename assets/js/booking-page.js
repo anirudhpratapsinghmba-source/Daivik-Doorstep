@@ -112,6 +112,21 @@ function closeLocationModal(){
   if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true");}
 }
 function openMapPicker(){openLocationModal();}
+function showGoogleMapFallback(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
+  const el=$("bookingMap"); if(!el)return;
+  let box=$("daivikMapFallback");
+  if(!box){
+    box=document.createElement("div");
+    box.id="daivikMapFallback";
+    box.style.cssText="position:absolute;inset:0;z-index:800;background:#e9eeee";
+    el.style.position="relative";
+    el.appendChild(box);
+  }
+  box.innerHTML='<iframe title="Daivik location map" style="width:100%;height:100%;border:0;display:block" loading="eager" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q='+encodeURIComponent(lat+","+lng)+'&z=16&output=embed"></iframe><div style="position:absolute;left:10px;right:10px;bottom:10px;background:rgba(7,16,20,.92);color:#fff;padding:9px 11px;border-radius:10px;font-size:11px;font-weight:700">Use <b>Current Location</b> or <b>Search</b> above to set the exact pin. Map preview is shown here.</div>';
+}
+function hideGoogleMapFallback(){
+  const box=$("daivikMapFallback"); if(box)box.remove();
+}
 function ensureBookingMap(){
   if(window.bookingMap){setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),150);return;}
   const el=$("bookingMap");
@@ -139,12 +154,18 @@ function ensureBookingMap(){
     if(i!==active)return;
     errors++;
     if(errors>=2&&i<layers.length-1)activate(i+1);
-    else if(errors>=2)setModalStatus("Map tiles are unavailable on this network. You can still Search or Use Current Location and then Confirm Location.",true);
+    else if(errors>=2){showGoogleMapFallback();setModalStatus("✓ Map preview loaded. Use Search or Current Location to set the exact customer pin.",true);}
   }));
   activate(0);
+  setTimeout(()=>{
+    if(!window.bookingMap)return;
+    const loaded=el.querySelectorAll(".leaflet-tile-loaded").length;
+    if(!loaded)showGoogleMapFallback();
+  },4500);
 
   window.baseMarker=L.marker([DAIVIK_BASE.lat,DAIVIK_BASE.lng]).addTo(window.bookingMap).bindPopup("Daivik Service Base");
   window.customerMarker=null;window.locationRouteLine=null;window.customerAccuracyCircle=null;
+  hideGoogleMapFallback();
   window.bookingMap.on("click",e=>setCustomerPin(e.latlng.lat,e.latlng.lng,null));
   setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),250);
   setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),800);
