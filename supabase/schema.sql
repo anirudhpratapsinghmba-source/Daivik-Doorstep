@@ -5,6 +5,7 @@ create extension if not exists pgcrypto with schema extensions;
 
 drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,timestamptz);
 drop function if exists public.create_booking(text,text,text,text,text,date,text,text,double precision,double precision,integer,text,timestamptz);
+drop function if exists public.track_booking(text);
 
 create table if not exists public.bookings (
   id text primary key,
@@ -46,6 +47,8 @@ alter table public.bookings add column if not exists offer_code text;
 alter table public.bookings add column if not exists payment_status text not null default 'Pending';
 alter table public.bookings add column if not exists payment_id text;
 alter table public.bookings add column if not exists payment_order_id text;
+alter table public.bookings drop constraint if exists bookings_payment_status_check;
+alter table public.bookings add constraint bookings_payment_status_check check (payment_status in ('Pending','Paid','Failed','Refunded'));
 
 create index if not exists bookings_created_at_idx on public.bookings(created_at desc);
 create index if not exists bookings_scheduled_at_idx on public.bookings(scheduled_at);
