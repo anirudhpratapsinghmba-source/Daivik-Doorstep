@@ -112,81 +112,182 @@ function closeLocationModal(){
   if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true");}
 }
 function openMapPicker(){openLocationModal();}
-function showGoogleMapFallback(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
-  const el=$("bookingMap"); if(!el)return;
-  let box=$("daivikMapFallback");
-  if(!box){
-    box=document.createElement("div");
-    box.id="daivikMapFallback";
-    box.style.cssText="position:absolute;inset:0;z-index:800;background:#e9eeee";
-    el.style.position="relative";
-    el.appendChild(box);
-  }
-  box.innerHTML='<iframe title="Daivik location map" style="width:100%;height:100%;border:0;display:block" loading="eager" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q='+encodeURIComponent(lat+","+lng)+'&z=16&output=embed"></iframe><div style="position:absolute;left:10px;right:10px;bottom:10px;background:rgba(7,16,20,.92);color:#fff;padding:9px 11px;border-radius:10px;font-size:11px;font-weight:700">Use <b>Current Location</b> or <b>Search</b> above to set the exact pin. Map preview is shown here.</div>';
+function mapMercatorY(lat){
+  const s=Math.sin(Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180);
+  return (0.5-Math.log((1+s)/(1-s))/(4*Math.PI));
 }
-function hideGoogleMapFallback(){
-  const box=$("daivikMapFallback"); if(box)box.remove();
+function mapMercatorLat(y){
+  return (180/Math.PI)*(2*Math.atan(Math.exp((0.5-y)*2*Math.PI))-Math.PI/2);
 }
-function ensureBookingMap(){
-  if(window.bookingMap){setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),150);return;}
+function mapViewportBBox(lat,lng,zoom=15){
   const el=$("bookingMap");
-  if(!el||!window.L){setModalStatus("Map is loading. Please wait, or use Search / Current Location.",true);return;}
+  const w=Math.max(320,el?.clientWidth||360);
+  const h=Math.max(260,el?.clientHeight||350);
+  const scale=256*Math.pow(2,zoom);
+  const x=(lng+180)/360;
+  const y=mapMercatorY(lat);
+  const westLng=((x-w/(2*scale))*360)-180;
+  const eastLng=((x+w/(2*scale))*360)-180;
+  const southLat=mapMercatorLat(y+h/(2*scale));
+  const northLat=mapMercatorLat(y-h/(2*scale));
+  return {west:westLng,south:southLat,east:eastLng,north:northLat,zoom};
+}
+function mapPointFromPointer(clientX,clientY){
+  const overlay=$("daivikMapOverlay");
+  if(!overlay||!window._daivikMapView)return null;
+  const r=overlay.getBoundingClientRect();
+  const px=Math.max(0,Math.min(r.width,clientX-r.left));
+  const py=Math.max(0,Math.min(r.height,clientY-r.top));
+  const {lat,lng,zoom}=window._daivikMapView;
+  const scale=256*Math.pow(2,zoom);
+  const cx=(lng+180)/360;
+  const cy=mapMercatorY(lat);
+  const x=cx+(px-r.width/2)/scale;
+  const y=cy+(py-r.height/2)/scale;
+  const lon=x*360-180;
+  const latitude=mapMercatorLat(y);
+  return {lat:latitude,lng:lon};
+}
+function buildOsmEmbed(lat,lng,marker=true){
+  const b=mapViewportBBox(lat,lng,15);
+  const q=[
+    "bbox="+[b.west,b.south,b.east,b.north].map(v=>v.toFixed(7)).join("%2C"),
+    "layer=mapnik",
+    marker?"marker="+encodeURIComponent(lat.toFixed(6)+","+lng.toFixed(6)):""
+  ].filter(Boolean).join("&");
+  return "https://www.openstreetmap.org/export/embed.html?"+q;
+}
+function positionMapMarker(lat,lng){
+  const marker=$("daivikCustomerPin");
+  const overlay=$("daivikMapOverlay");
+  if(!marker||!overlay||!window._daivikMapView)return;
+  const r=overlay.getBoundingClientRect();
+  const scale=256*Math.pow(2,window._daivikMapView.zoom);
+  const cx=(window._daivikMapView.lng+180)/360;
+  const cy=mapMercatorY(window._daivikMapView.lat);
+  const x=((lng+180)/360-cx)*scale+r.width/2;
+  const y=(mapMercatorY(lat)-cy)*scale+r.height/2;
+  marker.style.left=Math.max(10,Math.min(r.width-10,x))+"px";
+  marker.style.top=Math.max(10,Math.min(r.height-10,y))+"px";
+}
+function renderEmbeddedMap(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
+  const el=$("bookingMap"); if(!el)return;
+  const wrap=$("locationMapModal"); if(wrap)wrap.classList.add("open");
+  const b=mapViewportBBox(lat,lng,15);
+  window._daivikMapView={lat,lng,zoom:15,bbox:b};
+  el.innerHTML="";
+  el.style.position="relative";
+  el.style.overflow="hidden";
+  el.style.background="#dfe8e6";
 
-  window.bookingMap=L.map(el,{zoomControl:true,scrollWheelZoom:true,dragging:true,tap:true,attributionControl:true}).setView([DAIVIK_BASE.lat,DAIVIK_BASE.lng],14);
+  const iframe=document.createElement("iframe");
+  iframe.id="daivikOsmMap";
+  iframe.title="Daivik service location map";
+  iframe.loading="eager";
+  iframe.setAttribute("sandbox","allow-scripts");
+  iframe.setAttribute("scrolling","no");
+  iframe.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#dfe8e6";
+  iframe.src=buildOsmEmbed(lat,lng,!!window._daivikCustomerLocation);
+  el.appendChild(iframe);
 
-  const defs=[
-    ["OpenStreetMap","https://tile.openstreetmap.org/{z}/{x}/{y}.png","© OpenStreetMap contributors"],
-    ["OpenStreetMap DE","https://tile.openstreetmap.de/{z}/{x}/{y}.png","© OpenStreetMap contributors"],
-    ["Esri","https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}","Tiles © Esri"],
-    ["CARTO","https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png","© OpenStreetMap © CARTO"]
-  ];
-  const layers=defs.map(d=>L.tileLayer(d[1],{maxZoom:19,subdomains:"abcd",crossOrigin:true,attribution:d[2]}));
-  let active=0,errors=0;
+  const overlay=document.createElement("div");
+  overlay.id="daivikMapOverlay";
+  overlay.style.cssText="position:absolute;inset:0;z-index:20;cursor:crosshair;touch-action:none;background:transparent";
+  el.appendChild(overlay);
 
-  const activate=i=>{
-    if(i<0||i>=layers.length)return;
-    if(window._daivikActiveTile)window.bookingMap.removeLayer(window._daivikActiveTile);
-    active=i;errors=0;window._daivikActiveTile=layers[i];
-    layers[i].addTo(window.bookingMap);
-    setModalStatus(i===0?"Map ready. Tap the map to place your exact service pin.":"✓ Backup map loaded. Tap the map to place your exact service pin.");
+  const base=document.createElement("div");
+  base.id="daivikBasePin";
+  base.textContent="🏠";
+  base.title="Daivik service base";
+  base.style.cssText="position:absolute;z-index:22;transform:translate(-50%,-100%);font-size:23px;filter:drop-shadow(0 2px 2px #0008);pointer-events:none";
+  overlay.appendChild(base);
+
+  const customer=document.createElement("div");
+  customer.id="daivikCustomerPin";
+  customer.textContent="📍";
+  customer.title="Your service location — tap/drag to adjust";
+  customer.style.cssText="position:absolute;z-index:24;transform:translate(-50%,-100%);font-size:30px;filter:drop-shadow(0 2px 2px #0009);display:none;cursor:grab;touch-action:none";
+  overlay.appendChild(customer);
+
+  const hint=document.createElement("div");
+  hint.style.cssText="position:absolute;left:10px;right:10px;top:10px;z-index:23;background:rgba(7,16,20,.88);color:#fff;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;pointer-events:none";
+  hint.textContent=window._daivikCustomerLocation?"📍 Tap anywhere to move the pin • drag the pin for fine adjustment":"📍 Tap the map to place your service pin";
+  overlay.appendChild(hint);
+
+  const setBasePosition=()=>{
+    const basePoint=mapPointFromLatLng(DAIVIK_BASE.lat,DAIVIK_BASE.lng);
+    if(basePoint){base.style.left=basePoint.x+"px";base.style.top=basePoint.y+"px";}
+    if(window._daivikCustomerLocation)positionMapMarker(window._daivikCustomerLocation.lat,window._daivikCustomerLocation.lng);
   };
-  layers.forEach((layer,i)=>layer.on("tileerror",()=>{
-    if(i!==active)return;
-    errors++;
-    if(errors>=2&&i<layers.length-1)activate(i+1);
-    else if(errors>=2){showGoogleMapFallback();setModalStatus("✓ Map preview loaded. Use Search or Current Location to set the exact customer pin.",true);}
-  }));
-  activate(0);
-  setTimeout(()=>{
-    if(!window.bookingMap)return;
-    const loaded=el.querySelectorAll(".leaflet-tile-loaded").length;
-    if(!loaded)showGoogleMapFallback();
-  },4500);
+  window._daivikMapPointRefresh=setBasePosition;
+  setTimeout(setBasePosition,80);
+  setTimeout(setBasePosition,300);
 
-  window.baseMarker=L.marker([DAIVIK_BASE.lat,DAIVIK_BASE.lng]).addTo(window.bookingMap).bindPopup("Daivik Service Base");
-  window.customerMarker=null;window.locationRouteLine=null;window.customerAccuracyCircle=null;
-  hideGoogleMapFallback();
-  window.bookingMap.on("click",e=>setCustomerPin(e.latlng.lat,e.latlng.lng,null));
-  setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),250);
-  setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),800);
+  let dragging=false;
+  customer.addEventListener("pointerdown",e=>{
+    e.preventDefault();e.stopPropagation();dragging=true;customer.style.cursor="grabbing";
+    try{customer.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  customer.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    const p=mapPointFromPointer(e.clientX,e.clientY);
+    if(p)positionMapMarker(p.lat,p.lng);
+  });
+  const finishDrag=e=>{
+    if(!dragging)return;
+    dragging=false;customer.style.cursor="grab";
+    const p=mapPointFromPointer(e.clientX,e.clientY);
+    if(p)setCustomerPin(p.lat,p.lng,null);
+  };
+  customer.addEventListener("pointerup",finishDrag);
+  customer.addEventListener("pointercancel",finishDrag);
+
+  overlay.addEventListener("click",e=>{
+    if(e.target===customer)return;
+    const p=mapPointFromPointer(e.clientX,e.clientY);
+    if(p)setCustomerPin(p.lat,p.lng,null);
+  });
+
+  window.bookingMap={
+    invalidateSize:()=>{setTimeout(()=>{if(window._daivikMapPointRefresh)window._daivikMapPointRefresh()},50)},
+    setView:(p,z)=>{if(p&&Number.isFinite(p[0])&&Number.isFinite(p[1]))renderEmbeddedMap(p[0],p[1])}
+  };
+}
+function mapPointFromLatLng(lat,lng){
+  const overlay=$("daivikMapOverlay");
+  if(!overlay||!window._daivikMapView)return null;
+  const r=overlay.getBoundingClientRect();
+  const scale=256*Math.pow(2,window._daivikMapView.zoom);
+  const cx=(window._daivikMapView.lng+180)/360;
+  const cy=mapMercatorY(window._daivikMapView.lat);
+  return {
+    x=((lng+180)/360-cx)*scale+r.width/2,
+    y=(mapMercatorY(lat)-cy)*scale+r.height/2
+  };
+}
+function showGoogleMapFallback(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
+  renderEmbeddedMap(lat,lng);
+}
+function hideGoogleMapFallback(){}
+function ensureBookingMap(){
+  if(window.bookingMap){window.bookingMap.invalidateSize();return;}
+  renderEmbeddedMap(
+    window._daivikCustomerLocation?.lat||DAIVIK_BASE.lat,
+    window._daivikCustomerLocation?.lng||DAIVIK_BASE.lng
+  );
+  setModalStatus("✓ Map ready. Tap anywhere on the map to place the exact service pin.");
 }
 function setCustomerPin(lat,lng,accuracy=null){
-  if(!window.bookingMap||!Number.isFinite(lat)||!Number.isFinite(lng))return;
-  if(window.customerMarker)window.bookingMap.removeLayer(window.customerMarker);
-  if(window.customerAccuracyCircle)window.bookingMap.removeLayer(window.customerAccuracyCircle);
-  if(window.locationRouteLine)window.bookingMap.removeLayer(window.locationRouteLine);
-  window.customerMarker=L.marker([lat,lng],{draggable:true}).addTo(window.bookingMap).bindPopup("Your service location").openPopup();
-  window.locationRouteLine=L.polyline([[DAIVIK_BASE.lat,DAIVIK_BASE.lng],[lat,lng]],{weight:4,dashArray:"8 8"}).addTo(window.bookingMap);
-  if(Number.isFinite(accuracy)&&accuracy>0)window.customerAccuracyCircle=L.circle([lat,lng],{radius:accuracy,weight:1,fillOpacity:.08}).addTo(window.bookingMap);
-  window.customerMarker.on("dragend",e=>{const p=e.target.getLatLng();setCustomerPin(p.lat,p.lng,null);});
+  if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+  window._daivikCustomerLocation={lat,lng};
   updateLocation(lat,lng,"",accuracy);
+  renderEmbeddedMap(lat,lng);
   reverseGeocode(lat,lng).then(address=>{
-    if(address)$("baddress").value=address;
+    if(address)$( "baddress").value=address;
     updateLocation(lat,lng,address,accuracy);
     setModalStatus("✓ Pin selected. Check the distance/charge below, adjust the pin if needed, then Confirm Location.");
   });
-  const b=$("confirmLocationBtn");if(b)b.disabled=false;
-  window.bookingMap.setView([lat,lng],16,{animate:true});
+  const b=$( "confirmLocationBtn");if(b)b.disabled=false;
 }
 function useMyLocation(){
   openLocationModal();
@@ -197,7 +298,7 @@ function useMyLocation(){
   navigator.geolocation.getCurrentPosition(
     p=>{
       setCustomerPin(p.coords.latitude,p.coords.longitude,p.coords.accuracy);
-      setModalStatus("✓ Your current location is pinned. Drag the pin to the exact service point, then Confirm Location.");
+      setModalStatus("✓ Your current location is pinned. Tap/drag to adjust the exact service point, then Confirm Location.");
     },
     err=>{
       console.warn("GPS failed",err);
@@ -207,18 +308,18 @@ function useMyLocation(){
   );
 }
 function confirmSelectedLocation(){
-  const lat=Number($("bLat").value),lng=Number($("bLng").value);
+  const lat=Number($( "bLat").value),lng=Number($( "bLng").value);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){setModalStatus("First place your pin on the map.",true);return;}
-  const distance=Number($("bDistance").value||0),charge=Number($("bLocationCharge").value||0);
-  if(!$("baddress").value.trim())$("baddress").value="Pinned map location ("+lat.toFixed(6)+", "+lng.toFixed(6)+")";
+  const distance=Number($( "bDistance").value||0),charge=Number($( "bLocationCharge").value||0);
+  if(!$( "baddress").value.trim())$( "baddress").value="Pinned map location ("+lat.toFixed(6)+", "+lng.toFixed(6)+")";
   setLocationStatus(distance<=FREE_RADIUS_KM?"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — FREE service charge":"✓ Location confirmed • "+distance.toFixed(1)+" km from Daivik base — "+money(charge)+" service charge");
-  const link=$("customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
+  const link=$( "customerMapLink");if(link){link.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lng);link.style.display="inline";}
   setModalStatus("✓ Location confirmed. You can now complete the booking.");
   refreshBookingEstimate();
   setTimeout(closeLocationModal,300);
 }
 async function searchMapLocation(){
-  const input=$("mapLocationSearch"),q=(input?.value||"").trim();
+  const input=$( "mapLocationSearch"),q=(input?.value||"").trim();
   if(!q){setModalStatus("Enter an area, landmark, address or pincode.",true);return;}
   if(!window.bookingMap)ensureBookingMap();
   setModalStatus("🔎 Searching "+q+"…");
@@ -229,7 +330,7 @@ async function searchMapLocation(){
     if(!rows.length){setModalStatus("No location found. Try a nearby landmark or full address.",true);return;}
     const p=rows[0];
     setCustomerPin(Number(p.lat),Number(p.lon),null);
-    setModalStatus("✓ Search result selected. Drag the pin to the exact service point if needed.");
+    setModalStatus("✓ Search result selected. Tap again or drag the pin to the exact service point.");
   }catch(e){
     console.warn(e);
     setModalStatus("Search is temporarily unavailable. Tap the map manually to select your location.",true);
