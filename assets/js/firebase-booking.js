@@ -53,7 +53,28 @@
 
     if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
 
-    showSaved(data);\n    try{\n      localStorage.setItem("daivik_last_booking_v1",JSON.stringify({id:data.id,wash:data.wash,vehicle:data.vehicle,model:data.model,at:Date.now()}));\n      localStorage.removeItem("daivik_booking_draft_v1");\n    }catch(e){}
+    showSaved(data);
+    try{\n      localStorage.setItem("daivik_last_booking_v1",JSON.stringify({id:data.id,wash:data.wash,vehicle:data.vehicle,model:data.model,at:Date.now()}));\n      localStorage.removeItem("daivik_booking_draft_v1");\n    }catch(e){}
+  };
+
+  window.sendSavedBooking = function () {
+    try{
+      const raw=localStorage.getItem("daivikBooking");
+      if(!raw) return alert("Booking details are not available on this device.");
+      const d=JSON.parse(raw);
+      const msg=[
+        "Hello Daivik Doorstep Car Care,",
+        "I have submitted a booking request.",
+        "",
+        "Booking ID: "+d.id,
+        "Service: "+(P[d.vehicle]?.n||d.vehicle)+" — "+String(d.wash||"").replaceAll("_"," "),
+        "Car: "+(d.model||"Not specified"),
+        "Date/Time: "+d.date+" • "+d.time,
+        "Total: ₹"+Number(d.total||0).toLocaleString("en-IN"),
+        "Status: "+(d.status||"Pending Confirmation")
+      ].join("\n");
+      window.open("https://wa.me/917983558954?text="+encodeURIComponent(msg),"_blank","noopener");
+    }catch(e){alert("Could not prepare the WhatsApp message.");}
   };
 
   window.trackBooking = async function () {
