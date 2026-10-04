@@ -76,7 +76,26 @@ async function reverseGeocode(lat,lng){
     return d.display_name||"";
   }catch(e){return "";}
 }
+function ensureLocationControls(){
+  const card=document.querySelector(".locationCard");
+  if(!card||document.getElementById("mapLocationSearch"))return;
+  const actions=card.querySelector(".locationActions");
+  if(!actions)return;
+  const row=document.createElement("div");
+  row.style.cssText="display:flex;gap:8px;margin-top:10px";
+  row.innerHTML='<input id="mapLocationSearch" type="search" placeholder="Search area, landmark, address or pincode" style="flex:1;padding:12px;border:1px solid #d7e0e3;border-radius:10px"><button type="button" class="btn outlineDark" id="mapSearchBtn">Search</button>';
+  actions.insertAdjacentElement("afterend",row);
+  row.querySelector("#mapSearchBtn").addEventListener("click",searchMapLocation);
+  const footer=card.querySelector(".locationCard > div:last-child");
+  if(footer){
+    const confirm=document.createElement("button");
+    confirm.type="button";confirm.className="btn green";confirm.textContent="✓ Confirm Location";
+    confirm.style.marginLeft="8px";confirm.addEventListener("click",confirmSelectedLocation);
+    footer.insertBefore(confirm,footer.firstChild);
+  }
+}
 function openLocationModal(){
+  ensureLocationControls();
   const m=$("locationModal");
   if(m){m.classList.add("open");m.setAttribute("aria-hidden","false");}
   const mapWrap=$("locationMapModal");
