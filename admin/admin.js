@@ -38,7 +38,7 @@ async function loadPaymentSettings(){
 }
 async function savePaymentSettings(){
   const payload={id:1,merchant_name:$("merchantName").value.trim()||"Daivik Doorstep Car Care",upi_id:$("upiId").value.trim(),qr_image_url:$("qrImageUrl").value.trim(),updated_at:new Date().toISOString()};
-  const {error}=await client.from("payment_settings").upsert(payload,{onConflict:"id"});
+  const {error}=await client.from("payment_settings").update(payload).eq("id",1);
   $("settingsMsg").textContent=error?error.message:"Payment setup saved.";
   renderQrPreview();
 }
