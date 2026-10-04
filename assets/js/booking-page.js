@@ -369,10 +369,28 @@ function populateBookingModels(selectedValue=""){
   }
   if(customWrap)customWrap.hidden=select.value!=="__custom__";
 }
+function guardPastTimeSlots(){
+  const date=$("bdate"),time=$("btime");
+  if(!date||!time)return;
+  const today=new Date();
+  const selected=date.value;
+  const nowMinutes=today.getHours()*60+today.getMinutes();
+  [...time.options].forEach((opt,i)=>{
+    if(i===0)return;
+    const m=String(opt.value||opt.textContent).match(/^(\d{2}):(\d{2})\s*(AM|PM)/i);
+    if(!m){opt.disabled=false;return;}
+    let h=Number(m[1]); const min=Number(m[2]); const ap=m[3].toUpperCase();
+    if(ap==="PM"&&h!==12)h+=12; if(ap==="AM"&&h===12)h=0;
+    opt.disabled=selected===today.toISOString().slice(0,10) && h*60+min<=nowMinutes+30;
+  });
+  if(time.selectedOptions[0]?.disabled)time.value="";
+}
 function bindEstimateEvents(){
   ["bwash","baddon"].forEach(id=>$(id)?.addEventListener("change",refreshBookingEstimate));
   $("bvehicle")?.addEventListener("change",()=>{populateBookingModels();refreshBookingEstimate();});
   $("bmodel")?.addEventListener("change",()=>{const w=$("bmodelCustomWrap");if(w)w.hidden=$("bmodel").value!=="__custom__";});
+  $("bdate")?.addEventListener("change",guardPastTimeSlots);
+  guardPastTimeSlots();
   refreshBookingEstimate();
 }
 document.addEventListener("DOMContentLoaded",()=>{
