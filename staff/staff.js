@@ -47,7 +47,7 @@
     '</div>'+
     '<div class="actions">'+
       (canStart?'<button class="btn green" data-action="start" data-id="'+esc(b.id)+'">'+(b.status==="In Service"?"Service In Progress":"Start Service")+'</button>':"")+
-      (canPay?paymentBox(b):"")+
+      (canPay&&b.payment_status!=="Paid"?paymentBox(b):"")+
       (canClose?'<button class="btn green" data-action="close" data-id="'+esc(b.id)+'">Close Booking / Mark Completed</button>':"")+
       (terminal?'<div class="hint">This booking is closed.</div>':"")+
     '</div></article>';
