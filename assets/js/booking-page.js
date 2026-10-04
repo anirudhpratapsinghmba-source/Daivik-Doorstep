@@ -172,25 +172,46 @@ function positionMapMarker(lat,lng){
   marker.style.left=Math.max(10,Math.min(r.width-10,x))+"px";
   marker.style.top=Math.max(10,Math.min(r.height-10,y))+"px";
 }
+function osmTileXY(lat,lng,z){
+  const n=Math.pow(2,z);
+  const x=(lng+180)/360*n;
+  const latRad=lat*Math.PI/180;
+  const y=(1-Math.asinh(Math.tan(latRad))/Math.PI)/2*n;
+  return {x,y};
+}
 function renderEmbeddedMap(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
   const el=$("bookingMap"); if(!el)return;
   const wrap=$("locationMapModal"); if(wrap)wrap.classList.add("open");
-  const b=mapViewportBBox(lat,lng,15);
-  window._daivikMapView={lat,lng,zoom:15,bbox:b};
+  const zoom=15;
+  window._daivikMapView={lat,lng,zoom,bbox:mapViewportBBox(lat,lng,zoom)};
   el.innerHTML="";
   el.style.position="relative";
   el.style.overflow="hidden";
   el.style.background="#dfe8e6";
 
-  const iframe=document.createElement("iframe");
-  iframe.id="daivikOsmMap";
-  iframe.title="Daivik service location map";
-  iframe.loading="eager";
-  iframe.setAttribute("sandbox","allow-scripts");
-  iframe.setAttribute("scrolling","no");
-  iframe.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#dfe8e6";
-  iframe.src=buildOsmEmbed(lat,lng,!!window._daivikCustomerLocation);
-  el.appendChild(iframe);
+  const tiles=document.createElement("div");
+  tiles.style.cssText="position:absolute;inset:0;overflow:hidden;background:#dfe8e6";
+  const center=osmTileXY(lat,lng,zoom);
+  const tileSize=256;
+  const w=Math.max(320,el.clientWidth||360),h=Math.max(260,el.clientHeight||350);
+  const startX=Math.floor(center.x-w/(2*tileSize))-1;
+  const startY=Math.floor(center.y-h/(2*tileSize))-1;
+  const cols=Math.ceil(w/tileSize)+3, rows=Math.ceil(h/tileSize)+3;
+  const max=Math.pow(2,zoom);
+  for(let ty=startY;ty<startY+rows;ty++){
+    for(let tx=startX;tx<startX+cols;tx++){
+      const wrappedX=((tx%max)+max)%max;
+      if(ty<0||ty>=max)continue;
+      const img=document.createElement("img");
+      img.alt="";
+      img.draggable=false;
+      img.src="https://tile.openstreetmap.org/"+zoom+"/"+wrappedX+"/"+ty+".png";
+      img.style.cssText="position:absolute;width:256px;height:256px;max-width:none;left:"+(tx-center.x)*256+w/2+"px;top:"+(ty-center.y)*256+h/2+"px;user-select:none;pointer-events:none";
+      img.onerror=()=>{img.style.display="none";};
+      tiles.appendChild(img);
+    }
+  }
+  el.appendChild(tiles);
 
   const overlay=document.createElement("div");
   overlay.id="daivikMapOverlay";
@@ -216,14 +237,17 @@ function renderEmbeddedMap(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
   hint.textContent=window._daivikCustomerLocation?"📍 Tap anywhere to move the pin • drag the pin for fine adjustment":"📍 Tap the map to place your service pin";
   overlay.appendChild(hint);
 
-  const setBasePosition=()=>{
+  const setPositions=()=>{
     const basePoint=mapPointFromLatLng(DAIVIK_BASE.lat,DAIVIK_BASE.lng);
     if(basePoint){base.style.left=basePoint.x+"px";base.style.top=basePoint.y+"px";}
-    if(window._daivikCustomerLocation)positionMapMarker(window._daivikCustomerLocation.lat,window._daivikCustomerLocation.lng);
+    if(window._daivikCustomerLocation){
+      customer.style.display="block";
+      positionMapMarker(window._daivikCustomerLocation.lat,window._daivikCustomerLocation.lng);
+    }
   };
-  window._daivikMapPointRefresh=setBasePosition;
-  setTimeout(setBasePosition,80);
-  setTimeout(setBasePosition,300);
+  window._daivikMapPointRefresh=setPositions;
+  setTimeout(setPositions,50);
+  setTimeout(setPositions,250);
 
   let dragging=false;
   customer.addEventListener("pointerdown",e=>{
@@ -243,7 +267,6 @@ function renderEmbeddedMap(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
   };
   customer.addEventListener("pointerup",finishDrag);
   customer.addEventListener("pointercancel",finishDrag);
-
   overlay.addEventListener("click",e=>{
     if(e.target===customer)return;
     const p=mapPointFromPointer(e.clientX,e.clientY);
@@ -251,8 +274,8 @@ function renderEmbeddedMap(lat=DAIVIK_BASE.lat,lng=DAIVIK_BASE.lng){
   });
 
   window.bookingMap={
-    invalidateSize:()=>{setTimeout(()=>{if(window._daivikMapPointRefresh)window._daivikMapPointRefresh()},50)},
-    setView:(p,z)=>{if(p&&Number.isFinite(p[0])&&Number.isFinite(p[1]))renderEmbeddedMap(p[0],p[1])}
+    invalidateSize:()=>setTimeout(()=>window._daivikMapPointRefresh?.(),50),
+    setView:(p)=>{if(p&&Number.isFinite(p[0])&&Number.isFinite(p[1]))renderEmbeddedMap(p[0],p[1])}
   };
 }
 function mapPointFromLatLng(lat,lng){
