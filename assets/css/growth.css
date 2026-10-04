@@ -1,0 +1,12 @@
+/* Daivik growth layer — lightweight, dependency-free */
+.growth-bar{position:fixed;left:16px;bottom:16px;z-index:9998;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100vw - 32px)}
+.growth-action{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;border-radius:999px;background:#071014;color:#fff;text-decoration:none;font-weight:800;font-size:12px;box-shadow:0 12px 30px #07101425;border:1px solid #ffffff18}
+.growth-action.green{background:#20c96b;color:#06140b}
+.growth-action:hover{transform:translateY(-2px)}
+.booking-draft-banner{display:none;margin:0 auto 16px;max-width:1100px;padding:13px 15px;border:1px solid #b9ebca;background:#ecfff3;border-radius:14px;color:#146c3a;font-size:13px}
+.booking-draft-banner.show{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.booking-draft-banner button{border:0;border-radius:9px;padding:8px 12px;background:#071014;color:#fff;font-weight:800}
+.install-card{display:none;position:fixed;right:16px;bottom:16px;z-index:9999;width:min(340px,calc(100vw - 32px));padding:16px;border-radius:18px;background:#fff;border:1px solid #dfe7e3;box-shadow:0 20px 60px #07101420}
+.install-card.show{display:block}.install-card b{display:block;margin-bottom:5px}.install-card p{font-size:12px;color:#62716d;margin:0 0 12px;line-height:1.5}.install-actions{display:flex;gap:8px}.install-actions button{border:0;border-radius:10px;padding:10px 12px;font-weight:800;cursor:pointer}.install-actions .yes{background:#20c96b}.install-actions .no{background:#edf3ef}
+.growth-toast{position:fixed;top:18px;right:18px;z-index:10000;max-width:360px;padding:13px 15px;border-radius:13px;background:#071014;color:#fff;box-shadow:0 15px 40px #07101430;font-size:12px;transform:translateY(-15px);opacity:0;pointer-events:none;transition:.25s}.growth-toast.show{transform:translateY(0);opacity:1}
+@media(max-width:600px){.growth-bar{left:10px;right:10px;bottom:10px}.growth-action{font-size:11px;padding:10px 12px}.growth-bar .optional{display:none}}
