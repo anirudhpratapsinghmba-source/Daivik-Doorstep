@@ -113,34 +113,41 @@ function closeLocationModal(){
 }
 function openMapPicker(){openLocationModal();}
 function ensureBookingMap(){
-  if(window.bookingMap){setTimeout(()=>window.bookingMap.invalidateSize(),100);return;}
+  if(window.bookingMap){setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),150);return;}
   const el=$("bookingMap");
-  if(!el||!window.L){setModalStatus("Map library could not load. Please refresh the page.",true);return;}
+  if(!el||!window.L){setModalStatus("Map is loading. Please wait, or use Search / Current Location.",true);return;}
+
   window.bookingMap=L.map(el,{zoomControl:true,scrollWheelZoom:true,dragging:true,tap:true,attributionControl:true}).setView([DAIVIK_BASE.lat,DAIVIK_BASE.lng],14);
-  const primary=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"});
-  const fallback=L.tileLayer("https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"});
-  const esri=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles © Esri"});
-  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"});
-  const carto=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"});
-  const layers=[esri,osm,carto];
-  let active=0, errors=0;
-  function switchMapLayer(){
-    if(active>=layers.length-1){
-      setModalStatus("Map tiles are blocked on this network. You can still use Search, but map tiles need internet access.",true);
-      return;
-    }
-    window.bookingMap.removeLayer(layers[active]);
-    active++;errors=0;layers[active].addTo(window.bookingMap);
-    setModalStatus("✓ Switched to backup map. Tap to place your pin.");
-  }
-  layers.forEach((layer,index)=>layer.on("tileerror",()=>{
-    if(index===active){errors++;if(errors>=2)switchMapLayer();}
+
+  const defs=[
+    ["OpenStreetMap","https://tile.openstreetmap.org/{z}/{x}/{y}.png","© OpenStreetMap contributors"],
+    ["OpenStreetMap DE","https://tile.openstreetmap.de/{z}/{x}/{y}.png","© OpenStreetMap contributors"],
+    ["Esri","https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}","Tiles © Esri"],
+    ["CARTO","https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png","© OpenStreetMap © CARTO"]
+  ];
+  const layers=defs.map(d=>L.tileLayer(d[1],{maxZoom:19,subdomains:"abcd",crossOrigin:true,attribution:d[2]}));
+  let active=0,errors=0;
+
+  const activate=i=>{
+    if(i<0||i>=layers.length)return;
+    if(window._daivikActiveTile)window.bookingMap.removeLayer(window._daivikActiveTile);
+    active=i;errors=0;window._daivikActiveTile=layers[i];
+    layers[i].addTo(window.bookingMap);
+    setModalStatus(i===0?"Map ready. Tap the map to place your exact service pin.":"✓ Backup map loaded. Tap the map to place your exact service pin.");
+  };
+  layers.forEach((layer,i)=>layer.on("tileerror",()=>{
+    if(i!==active)return;
+    errors++;
+    if(errors>=2&&i<layers.length-1)activate(i+1);
+    else if(errors>=2)setModalStatus("Map tiles are unavailable on this network. You can still Search or Use Current Location and then Confirm Location.",true);
   }));
-  layers[0].addTo(window.bookingMap);
+  activate(0);
+
   window.baseMarker=L.marker([DAIVIK_BASE.lat,DAIVIK_BASE.lng]).addTo(window.bookingMap).bindPopup("Daivik Service Base");
   window.customerMarker=null;window.locationRouteLine=null;window.customerAccuracyCircle=null;
   window.bookingMap.on("click",e=>setCustomerPin(e.latlng.lat,e.latlng.lng,null));
-  setTimeout(()=>window.bookingMap.invalidateSize(),300);
+  setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),250);
+  setTimeout(()=>window.bookingMap.invalidateSize({pan:true}),800);
 }
 function setCustomerPin(lat,lng,accuracy=null){
   if(!window.bookingMap||!Number.isFinite(lat)||!Number.isFinite(lng))return;
