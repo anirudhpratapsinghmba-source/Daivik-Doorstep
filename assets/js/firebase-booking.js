@@ -36,11 +36,11 @@
     if(button){button.disabled=true;button.textContent="Saving booking…";}
     if(errorBox){errorBox.classList.remove("show");errorBox.textContent="";}
     const name=$("bname").value.trim(), phone=$("bphone").value.trim(), vehicle=$("bvehicle").value,
-      model=$("bmodel").value.trim(), wash=$("bwash").value, date=$("bdate").value, time=$("btime").value,
+      model=($("bmodel").value==="__custom__"?$("bmodelCustom").value.trim():$("bmodel").value.trim()), wash=$("bwash").value, date=$("bdate").value, time=$("btime").value,
       address=$("baddress").value.trim(), addon=Number($("baddon").value||0),
       lat=Number($("bLat").value), lng=Number($("bLng").value);
 
-    if(!name||!phone||!vehicle||!wash||!date||!time||!address){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please complete all required details.");}
+    if(!name||!phone||!vehicle||!model||!wash||!date||!time||!address){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please complete all required details.");}
     if(!/^[0-9]{10}$/.test(phone)){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please enter a valid 10-digit mobile number.");}
     if(!Number.isFinite(lat)||!Number.isFinite(lng)){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please select your service location using the map or Use My Location.");}
     if(new Date(date + "T23:59:59") < new Date()){if(button){button.disabled=false;button.textContent="Confirm Booking Request";}return alert("Please select a future service date.");}
