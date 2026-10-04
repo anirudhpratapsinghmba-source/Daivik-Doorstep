@@ -1,44 +1,77 @@
-/* Daivik front-page pricing calculator */
+/* Daivik front-page pricing calculator — full India model catalogue */
 (() => {
  const prices={
-  hatchback:{n:"Hatchback",ultra_basic:299,basic:399,medium:599,premium:899,models:["Maruti Swift","Hyundai Grand i10","Tata Tiago","Maruti Baleno","Other"]},
-  sedan:{n:"Sedan",ultra_basic:299,basic:399,medium:599,premium:899,models:["Honda City","Hyundai Verna","Maruti Dzire","Honda Amaze","Other"]},
-  "compact-suv":{n:"Compact SUV",basic:599,medium:799,premium:1099,models:["Hyundai Venue","Kia Sonet","Tata Nexon","Maruti Brezza","Other"]},
-  "mid-suv":{n:"Mid-Size SUV",basic:699,medium:899,premium:1199,models:["Hyundai Creta","Kia Seltos","Toyota Hyryder","Maruti Grand Vitara","Other"]},
-  "full-suv":{n:"Full-Size SUV / 7-Seater",basic:799,medium:999,premium:1299,models:["Toyota Fortuner","MG Hector","XUV700","Safari","Other"]},
-  "luxury-suv":{n:"Luxury / Premium SUV",basic:999,medium:1199,premium:1499,models:["Jeep Meridian","Toyota Land Cruiser","BMW X1","Mercedes-Benz GLA","Other"]}
+  hatchback:{n:"Hatchback",ultra_basic:299,basic:399,medium:599,premium:899},
+  sedan:{n:"Sedan",ultra_basic:299,basic:399,medium:599,premium:899},
+  "compact-suv":{n:"Compact SUV",basic:599,medium:799,premium:1099},
+  "mid-suv":{n:"Mid-Size SUV",basic:699,medium:899,premium:1199},
+  "full-suv":{n:"Full-Size SUV / 7-Seater",basic:799,medium:999,premium:1299},
+  "luxury-suv":{n:"Luxury / Premium SUV",basic:999,medium:1199,premium:1499}
  };
  const vehicle=document.getElementById("calcVehicle"),model=document.getElementById("calcModel"),wash=document.getElementById("calcWash");
  const original=document.getElementById("calcOriginal"),price=document.getElementById("calcPrice"),name=document.getElementById("calcName"),discount=document.getElementById("calcDiscount");
  const chips=[...document.querySelectorAll("[data-wash]")];
+ const catalogue=window.DAIVIK_CAR_MODELS||{};
  if(!vehicle||!model||!wash)return;
- const money=n=>"₹"+Number(n).toLocaleString("en-IN");
+ const money=n=>"₹"+Number(n||0).toLocaleString("en-IN");
+
  function fillModels(){
-   const p=prices[vehicle.value]||prices.hatchback;
-   model.innerHTML=p.models.map(x=>"<option>"+x+"</option>").join("");
+   const groups=catalogue[vehicle.value]||{};
+   model.innerHTML="";
+   Object.entries(groups).forEach(([brand,models])=>{
+     const optgroup=document.createElement("optgroup");
+     optgroup.label=brand;
+     models.forEach(m=>{
+       const option=document.createElement("option");
+       option.value=brand+" — "+m;
+       option.textContent=m;
+       optgroup.appendChild(option);
+     });
+     model.appendChild(optgroup);
+   });
+   const custom=document.createElement("option");
+   custom.value="__custom__";
+   custom.textContent="✎ My model isn't listed — enter manually";
+   model.appendChild(custom);
    update();
  }
+
  function update(){
    const p=prices[vehicle.value]||prices.hatchback;
    const ultraChip=chips.find(c=>c.dataset.wash==="ultra_basic");
-   if(ultraChip)ultraChip.disabled=!["hatchback","sedan"].includes(vehicle.value);
-   if(wash.value==="ultra_basic"&&!["hatchback","sedan"].includes(vehicle.value))wash.value="basic";
-   const base=p[wash.value]||p.basic;
-   const offer=Math.round(base*.10), final=base-offer;
-   name.textContent=(model.value||"Your car")+" • "+p.n+" • "+wash.value.charAt(0).toUpperCase()+wash.value.slice(1);
-   original.textContent=money(base);
+   const ultraAllowed=["hatchback","sedan"].includes(vehicle.value);
+   if(ultraChip)ultraChip.disabled=!ultraAllowed;
+   if(wash.value==="ultra_basic"&&!ultraAllowed){
+     wash.value="basic";
+     chips.forEach(c=>c.classList.toggle("active",c.dataset.wash===wash.value));
+   }
+   const base=Number(p[wash.value]||p.basic);
+   const saved=Math.round(base*.10);
+   const final=base-saved;
+   const selected=model.options[model.selectedIndex];
+   const modelName=selected?selected.textContent:"Select your model";
+   name.textContent=(modelName==="✎ My model isn't listed — enter manually"?"Custom model":modelName)+" • "+p.n;
+   original.textContent="Standard "+money(base);
    price.textContent=money(final);
-   discount.textContent="10% ONLINE BOOKING OFFER • Save "+money(offer);
-   chips.forEach(c=>c.classList.toggle("active",c.dataset.wash===wash.value));
+   discount.textContent="10% ONLINE BOOKING OFFER • SAVE "+money(saved);
+   const book=document.getElementById("calcBook");
+   if(book){
+     const params=new URLSearchParams({vehicle:vehicle.value,model:model.value,wash:wash.value,offer:"DAIVIK10"});
+     book.href="booking.html?"+params.toString();
+   }
  }
- chips.forEach(chip=>chip.addEventListener("click",()=>{wash.value=chip.dataset.wash;update()}));
+
  vehicle.addEventListener("change",fillModels);
- wash.addEventListener("change",update);
- model.addEventListener("change",update);
- fillModels();
- const book=document.getElementById("calcBook");
- if(book)book.addEventListener("click",e=>{
-   e.preventDefault();
-   location.href="booking.html?vehicle="+encodeURIComponent(vehicle.value)+"&wash="+encodeURIComponent(wash.value)+"&model="+encodeURIComponent(model.value)+"&offer=DAIVIK10";
+ model.addEventListener("change",()=>{
+   const wrap=document.getElementById("calcCustomWrap");
+   if(wrap)wrap.hidden=model.value!=="__custom__";
+   update();
  });
+ chips.forEach(chip=>chip.addEventListener("click",()=>{
+   if(chip.disabled)return;
+   wash.value=chip.dataset.wash;
+   chips.forEach(c=>c.classList.toggle("active",c===chip));
+   update();
+ }));
+ fillModels();
 })();
