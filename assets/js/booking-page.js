@@ -357,7 +357,7 @@ function useMyLocation(){
     }).catch(()=>startGPS());
   }else startGPS();
 }
-function confirmSelectedLocation(){(){
+function confirmSelectedLocation(){
   const lat=Number($( "bLat").value),lng=Number($( "bLng").value);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){setModalStatus("First place your pin on the map.",true);return;}
   const distance=Number($( "bDistance").value||0),charge=Number($( "bLocationCharge").value||0);
