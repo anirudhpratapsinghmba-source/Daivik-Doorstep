@@ -119,15 +119,24 @@ function ensureBookingMap(){
   window.bookingMap=L.map(el,{zoomControl:true,scrollWheelZoom:true,dragging:true,tap:true,attributionControl:true}).setView([DAIVIK_BASE.lat,DAIVIK_BASE.lng],14);
   const primary=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"});
   const fallback=L.tileLayer("https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"});
-  window.mapTileFallbackUsed=false;
-  primary.on("tileerror",function(){
-    if(window.mapTileFallbackUsed)return;
-    window.mapTileFallbackUsed=true;
-    window.bookingMap.removeLayer(primary);
-    fallback.addTo(window.bookingMap);
-    setModalStatus("Map switched to backup map service. Tap to place your pin.");
-  });
-  primary.addTo(window.bookingMap);
+  const esri=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles © Esri"});
+  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"});
+  const carto=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"});
+  const layers=[esri,osm,carto];
+  let active=0, errors=0;
+  function switchMapLayer(){
+    if(active>=layers.length-1){
+      setModalStatus("Map tiles are blocked on this network. You can still use Search, but map tiles need internet access.",true);
+      return;
+    }
+    window.bookingMap.removeLayer(layers[active]);
+    active++;errors=0;layers[active].addTo(window.bookingMap);
+    setModalStatus("✓ Switched to backup map. Tap to place your pin.");
+  }
+  layers.forEach((layer,index)=>layer.on("tileerror",()=>{
+    if(index===active){errors++;if(errors>=2)switchMapLayer();}
+  }));
+  layers[0].addTo(window.bookingMap);
   window.baseMarker=L.marker([DAIVIK_BASE.lat,DAIVIK_BASE.lng]).addTo(window.bookingMap).bindPopup("Daivik Service Base");
   window.customerMarker=null;window.locationRouteLine=null;window.customerAccuracyCircle=null;
   window.bookingMap.on("click",e=>setCustomerPin(e.latlng.lat,e.latlng.lng,null));
